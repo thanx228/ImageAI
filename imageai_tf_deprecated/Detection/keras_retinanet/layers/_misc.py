@@ -72,15 +72,14 @@ class Anchors(keras.layers.Layer):
         return anchors
 
     def compute_output_shape(self, input_shape):
-        if None not in input_shape[1:]:
-            if keras.backend.image_data_format() == 'channels_first':
-                total = np.prod(input_shape[2:4]) * self.num_anchors
-            else:
-                total = np.prod(input_shape[1:3]) * self.num_anchors
-
-            return (input_shape[0], total, 4)
-        else:
+        if None in input_shape[1:]:
             return (input_shape[0], None, 4)
+        total = (
+            np.prod(input_shape[2:4]) * self.num_anchors
+            if keras.backend.image_data_format() == 'channels_first'
+            else np.prod(input_shape[1:3]) * self.num_anchors
+        )
+        return (input_shape[0], total, 4)
 
     def get_config(self):
         config = super(Anchors, self).get_config()
@@ -101,13 +100,12 @@ class UpsampleLike(keras.layers.Layer):
     def call(self, inputs, **kwargs):
         source, target = inputs
         target_shape = keras.backend.shape(target)
-        if keras.backend.image_data_format() == 'channels_first':
-            source = tensorflow.transpose(source, (0, 2, 3, 1))
-            output = backend.resize_images(source, (target_shape[2], target_shape[3]), method='nearest')
-            output = tensorflow.transpose(output, (0, 3, 1, 2))
-            return output
-        else:
+        if keras.backend.image_data_format() != 'channels_first':
             return backend.resize_images(source, (target_shape[1], target_shape[2]), method='nearest')
+        source = tensorflow.transpose(source, (0, 2, 3, 1))
+        output = backend.resize_images(source, (target_shape[2], target_shape[3]), method='nearest')
+        output = tensorflow.transpose(output, (0, 3, 1, 2))
+        return output
 
     def compute_output_shape(self, input_shape):
         if keras.backend.image_data_format() == 'channels_first':
@@ -135,12 +133,16 @@ class RegressBoxes(keras.layers.Layer):
         if isinstance(mean, (list, tuple)):
             mean = np.array(mean)
         elif not isinstance(mean, np.ndarray):
-            raise ValueError('Expected mean to be a np.ndarray, list or tuple. Received: {}'.format(type(mean)))
+            raise ValueError(
+                f'Expected mean to be a np.ndarray, list or tuple. Received: {type(mean)}'
+            )
 
         if isinstance(std, (list, tuple)):
             std = np.array(std)
         elif not isinstance(std, np.ndarray):
-            raise ValueError('Expected std to be a np.ndarray, list or tuple. Received: {}'.format(type(std)))
+            raise ValueError(
+                f'Expected std to be a np.ndarray, list or tuple. Received: {type(std)}'
+            )
 
         self.mean = mean
         self.std  = std

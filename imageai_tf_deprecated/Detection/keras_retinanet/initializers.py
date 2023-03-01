@@ -32,7 +32,6 @@ class PriorProbability(keras.initializers.Initializer):
         }
 
     def __call__(self, shape, dtype=None):
-        # set bias to -log((1 - p)/p) for foreground
-        result = keras.backend.ones(shape, dtype=dtype) * -math.log((1 - self.probability) / self.probability)
-
-        return result
+        return keras.backend.ones(shape, dtype=dtype) * -math.log(
+            (1 - self.probability) / self.probability
+        )

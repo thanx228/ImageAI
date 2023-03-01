@@ -132,7 +132,7 @@ def create_generator(args):
             **common_args
         )
     else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+        raise ValueError(f'Invalid data type received: {args.dataset_type}')
 
     return generator
 
@@ -258,7 +258,7 @@ def run(generator, args, anchor_params, pyramid_levels):
                 i = generator.size() - 1
 
         # press q or Esc to quit
-        if (key == ord('q')) or (key == 27):
+        if key in [ord('q'), 27]:
             return False
 
     return True
@@ -280,7 +280,7 @@ def make_output_path(output_dir, image_path, flatten = False):
 
     # In all cases, append "_debug" to the filename, before the extension.
     base, extension = os.path.splitext(path)
-    path = base + "_debug" + extension
+    path = f"{base}_debug{extension}"
 
     # Finally, join the whole thing to the output directory.
     return os.path.join(output_dir, path)

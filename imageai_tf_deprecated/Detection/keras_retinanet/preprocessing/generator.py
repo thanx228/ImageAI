@@ -151,7 +151,9 @@ class Generator(keras.utils.Sequence):
         """
         annotations_group = [self.load_annotations(image_index) for image_index in group]
         for annotations in annotations_group:
-            assert(isinstance(annotations, dict)), '\'load_annotations\' should return a list of dictionaries, received: {}'.format(type(annotations))
+            assert isinstance(
+                annotations, dict
+            ), f"\'load_annotations\' should return a list of dictionaries, received: {type(annotations)}"
             assert('labels' in annotations), '\'load_annotations\' should return a list of dictionaries that contain \'labels\' and \'bboxes\'.'
             assert('bboxes' in annotations), '\'load_annotations\' should return a list of dictionaries that contain \'labels\' and \'bboxes\'.'
 
@@ -174,12 +176,9 @@ class Generator(keras.utils.Sequence):
 
             # delete invalid indices
             if len(invalid_indices):
-                warnings.warn('Image {} with id {} (shape {}) contains the following invalid boxes: {}.'.format(
-                    self.image_path(group[index]),
-                    group[index],
-                    image.shape,
-                    annotations['bboxes'][invalid_indices, :]
-                ))
+                warnings.warn(
+                    f"Image {self.image_path(group[index])} with id {group[index]} (shape {image.shape}) contains the following invalid boxes: {annotations['bboxes'][invalid_indices, :]}."
+                )
                 for k in annotations_group[index].keys():
                     annotations_group[index][k] = np.delete(annotations[k], invalid_indices, axis=0)
         return image_group, annotations_group

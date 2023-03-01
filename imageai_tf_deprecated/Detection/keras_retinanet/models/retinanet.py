@@ -56,10 +56,12 @@ def default_classification_model(
         outputs = keras.layers.Conv2D(
             filters=classification_feature_size,
             activation='relu',
-            name='pyramid_classification_{}'.format(i),
-            kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01, seed=None),
+            name=f'pyramid_classification_{i}',
+            kernel_initializer=keras.initializers.RandomNormal(
+                mean=0.0, stddev=0.01, seed=None
+            ),
             bias_initializer='zeros',
-            **options
+            **options,
         )(outputs)
 
     outputs = keras.layers.Conv2D(
@@ -112,8 +114,8 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         outputs = keras.layers.Conv2D(
             filters=regression_feature_size,
             activation='relu',
-            name='pyramid_regression_{}'.format(i),
-            **options
+            name=f'pyramid_regression_{i}',
+            **options,
         )(outputs)
 
     outputs = keras.layers.Conv2D(num_anchors * num_values, name='pyramid_regression', **options)(outputs)
@@ -136,14 +138,11 @@ def __create_pyramid_features(backbone_layers, pyramid_levels, feature_size=256)
         output_layers : A dict of feature levels. P3, P4, P5, P6 are always included. P2, P6, P7 included if in use.
     """
 
-    output_layers = {}
-
     # upsample C5 to get P5 from the FPN paper
     P5           = keras.layers.Conv2D(feature_size, kernel_size=1, strides=1, padding='same', name='C5_reduced')(backbone_layers['C5'])
     P5_upsampled = layers.UpsampleLike(name='P5_upsampled')([P5, backbone_layers['C4']])
     P5           = keras.layers.Conv2D(feature_size, kernel_size=3, strides=1, padding='same', name='P5')(P5)
-    output_layers["P5"] = P5
-
+    output_layers = {"P5": P5}
     # add P5 elementwise to C4
     P4           = keras.layers.Conv2D(feature_size, kernel_size=1, strides=1, padding='same', name='C4_reduced')(backbone_layers['C4'])
     P4           = keras.layers.Add(name='P4_merged')([P5_upsampled, P4])
@@ -247,8 +246,9 @@ def __build_anchors(anchor_parameters, features):
             stride=anchor_parameters.strides[i],
             ratios=anchor_parameters.ratios,
             scales=anchor_parameters.scales,
-            name='anchors_{}'.format(i)
-        )(f) for i, f in enumerate(features)
+            name=f'anchors_{i}',
+        )(f)
+        for i, f in enumerate(features)
     ]
 
     return keras.layers.Concatenate(axis=1, name='anchors')(anchors)
@@ -305,7 +305,7 @@ def retinanet(
 
     # compute pyramid features as per https://arxiv.org/abs/1708.02002
     features = create_pyramid_features(backbone_layers, pyramid_levels)
-    feature_list = [features['P{}'.format(p)] for p in pyramid_levels]
+    feature_list = [features[f'P{p}'] for p in pyramid_levels]
 
     # for all pyramid levels, run available submodels
     pyramids = __build_pyramid(submodels, feature_list)
@@ -368,11 +368,11 @@ def retinanet_bbox(
     if pyramid_levels is None:
         pyramid_levels = [3, 4, 5, 6, 7]
 
-    assert len(pyramid_levels) == len(anchor_params.sizes), \
-        "number of pyramid levels {} should match number of anchor parameter sizes {}".format(len(pyramid_levels),
-                                                                                              len(anchor_params.sizes))
+    assert len(pyramid_levels) == len(
+        anchor_params.sizes
+    ), f"number of pyramid levels {len(pyramid_levels)} should match number of anchor parameter sizes {len(anchor_params.sizes)}"
 
-    pyramid_layer_names = ['P{}'.format(p) for p in pyramid_levels]
+    pyramid_layer_names = [f'P{p}' for p in pyramid_levels]
     # compute the anchors
     features = [model.get_layer(p_name).output for p_name in pyramid_layer_names]
     anchors  = __build_anchors(anchor_params, features)

@@ -180,8 +180,10 @@ class ClassificationModelTrainer:
         lr_scheduler = tf.keras.callbacks.LearningRateScheduler(self.lr_schedule)
 
 
-        if(training_image_size < 100):
-            warnings.warn("The specified training_image_size {} is less than 100. Hence the training_image_size will default to 100.".format(training_image_size))
+        if (training_image_size < 100):
+            warnings.warn(
+                f"The specified training_image_size {training_image_size} is less than 100. Hence the training_image_size will default to 100."
+            )
             training_image_size = 100
 
 
@@ -199,7 +201,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.model.Models(inputs=base_model.input, outputs=network)
 
                 if (show_network_summary == True):
@@ -207,11 +209,11 @@ class ClassificationModelTrainer:
             else:
                 base_model = tf.keras.applications.MobileNetV2(input_shape=(training_image_size, training_image_size, 3), weights= None, classes=num_objects,
                 include_top=False, pooling="avg")
-                
+
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.models.Model(inputs=base_model.input, outputs=network)
 
         elif (self.__modelType == "resnet50"):
@@ -227,7 +229,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.model.Models(inputs=base_model.input, outputs=network)
 
                 if (show_network_summary == True):
@@ -239,7 +241,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.models.Model(inputs=base_model.input, outputs=network)
 
         elif (self.__modelType == "inceptionv3"):
@@ -256,7 +258,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.model.Models(inputs=base_model.input, outputs=network)
 
                 if (show_network_summary == True):
@@ -268,7 +270,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.models.Model(inputs=base_model.input, outputs=network)
 
             base_model = tf.keras.applications.InceptionV3(input_shape=(training_image_size, training_image_size, 3), weights= None, classes=num_objects,
@@ -287,7 +289,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.model.Models(inputs=base_model.input, outputs=network)
 
                 if (show_network_summary == True):
@@ -299,7 +301,7 @@ class ClassificationModelTrainer:
                 network = base_model.output
                 network = tf.keras.layers.Dense(num_objects, activation='softmax',
                          use_bias=True)(network)
-                
+
                 model = tf.keras.models.Model(inputs=base_model.input, outputs=network)
 
             base_model = tf.keras.applications.DenseNet121(input_shape=(training_image_size, training_image_size, 3), weights= None, classes=num_objects,
@@ -313,7 +315,7 @@ class ClassificationModelTrainer:
 
         model_name = 'model_ex-{epoch:03d}_acc-{accuracy:03f}.h5'
 
-        log_name = '{}_lr-{}_{}'.format(self.__modelType, initial_learning_rate, time.strftime("%Y-%m-%d-%H-%M-%S"))
+        log_name = f'{self.__modelType}_lr-{initial_learning_rate}_{time.strftime("%Y-%m-%d-%H-%M-%S")}'
 
         if not os.path.isdir(self.__trained_model_dir):
             os.makedirs(self.__trained_model_dir)
@@ -331,12 +333,7 @@ class ClassificationModelTrainer:
         if not os.path.isdir(logs_path):
             os.makedirs(logs_path)
 
-        save_weights_condition = True
-
-        if(save_full_model == True ):
-            save_weights_condition = False
-
-
+        save_weights_condition = save_full_model != True
         checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=model_path,
                                      monitor='accuracy',
                                      verbose=1,
@@ -349,7 +346,7 @@ class ClassificationModelTrainer:
                                   histogram_freq=0, 
                                   write_graph=False, 
                                   write_images=False)
-        
+
 
         if (enhance_data == True):
             print("Using Enhanced Data Generation")
@@ -375,10 +372,9 @@ class ClassificationModelTrainer:
                                                           class_mode="categorical")
 
         class_indices = train_generator.class_indices
-        class_json = {}
-        for eachClass in class_indices:
-            class_json[str(class_indices[eachClass])] = eachClass
-
+        class_json = {
+            str(class_indices[eachClass]): eachClass for eachClass in class_indices
+        }
         with open(os.path.join(self.__model_class_dir, "model_class.json"), "w+") as json_file:
             json.dump(class_json, json_file, indent=4, separators=(",", " : "),
                       ensure_ascii=True)
@@ -389,7 +385,7 @@ class ClassificationModelTrainer:
         num_test = len(test_generator.filenames)
         print("Number of experiments (Epochs) : ", self.__num_epochs)
 
-        
+
         model.fit_generator(train_generator, steps_per_epoch=int(num_train / batch_size), epochs=self.__num_epochs,
                             validation_data=test_generator,
                             validation_steps=int(num_test / batch_size), callbacks=[checkpoint, lr_scheduler])
@@ -419,7 +415,7 @@ class CustomImageClassification:
         self.modelPath = ""
         self.jsonPath = ""
         self.numObjects = 10
-        self.__model_classes = dict()
+        self.__model_classes = {}
         self.__modelLoaded = False
         self.__model_collection = []
         self.__input_image_size = 224
@@ -489,39 +485,43 @@ class CustomImageClassification:
 
         self.__model_classes = json.load(open(self.jsonPath))
 
-        if(classification_speed=="normal"):
-            self.__input_image_size = 224
-        elif(classification_speed=="fast"):
+        if classification_speed == "fast":
             self.__input_image_size = 160
-        elif(classification_speed=="faster"):
+        elif classification_speed == "faster":
             self.__input_image_size = 120
-        elif (classification_speed == "fastest"):
+        elif classification_speed == "fastest":
             self.__input_image_size = 100
 
+        elif classification_speed == "normal":
+            self.__input_image_size = 224
         if (self.__modelLoaded == False):
 
             image_input = tf.keras.layers.Input(shape=(self.__input_image_size, self.__input_image_size, 3))
 
-            if(self.__modelType == "" ):
+            if (self.__modelType == "" ):
                 raise ValueError("You must set a valid model type before loading the model.")
 
-            elif(self.__modelType == "mobilenetv2"):
+            elif (self.__modelType == "mobilenetv2"):
                 model = tf.keras.applications.MobileNetV2(input_shape=(self.__input_image_size, self.__input_image_size, 3), weights=self.modelPath, classes = num_objects )
                 self.__model_collection.append(model)
                 self.__modelLoaded = True
                 try:
                     None
                 except:
-                    raise ValueError("An error occured. Ensure your model file is a MobileNetV2 Model and is located in the path {}".format(self.modelPath))
+                    raise ValueError(
+                        f"An error occured. Ensure your model file is a MobileNetV2 Model and is located in the path {self.modelPath}"
+                    )
 
-            elif(self.__modelType == "resnet50"):
+            elif (self.__modelType == "resnet50"):
                 try:
                     model = tf.keras.applications.ResNet50(input_shape=(self.__input_image_size, self.__input_image_size, 3), weights=None, classes = num_objects )
                     model.load_weights(self.modelPath)
                     self.__model_collection.append(model)
                     self.__modelLoaded = True
                 except:
-                    raise ValueError("An error occured. Ensure your model file is a ResNet50 Model and is located in the path {}".format(self.modelPath))
+                    raise ValueError(
+                        f"An error occured. Ensure your model file is a ResNet50 Model and is located in the path {self.modelPath}"
+                    )
 
             elif (self.__modelType == "densenet121"):
                 try:
@@ -529,7 +529,9 @@ class CustomImageClassification:
                     self.__model_collection.append(model)
                     self.__modelLoaded = True
                 except:
-                    raise ValueError("An error occured. Ensure your model file is a DenseNet121 Model and is located in the path {}".format(self.modelPath))
+                    raise ValueError(
+                        f"An error occured. Ensure your model file is a DenseNet121 Model and is located in the path {self.modelPath}"
+                    )
 
             elif (self.__modelType == "inceptionv3"):
                 try:
@@ -537,7 +539,9 @@ class CustomImageClassification:
                     self.__model_collection.append(model)
                     self.__modelLoaded = True
                 except:
-                    raise ValueError("An error occured. Ensure your model file is in {}".format(self.modelPath))
+                    raise ValueError(
+                        f"An error occured. Ensure your model file is in {self.modelPath}"
+                    )
     def loadFullModel(self, classification_speed="normal", num_objects=10):
         """
         'loadFullModel()' function is used to load the model structure into the program from the file path defined
@@ -596,68 +600,63 @@ class CustomImageClassification:
         :param result_count:
         :return classification_results, classification_probabilities:
         """
-        classification_results = []
-        classification_probabilities = []
         if (self.__modelLoaded == False):
             raise ValueError("You must call the loadModel() function before making classification.")
 
-        else:
-            if (input_type == "file"):
-                try:
-                    image_to_predict = tf.keras.preprocessing.image.load_img(image_input, target_size=(self.__input_image_size, self.__input_image_size))
-                    image_to_predict = tf.keras.preprocessing.image.img_to_array(image_to_predict, data_format="channels_last")
-                    image_to_predict = np.expand_dims(image_to_predict, axis=0)
-                except:
-                    raise ValueError("You have set a path to an invalid image file.")
-            elif (input_type == "array"):
-                try:
-                    image_input = Image.fromarray(np.uint8(image_input))
-                    image_input = image_input.resize((self.__input_image_size, self.__input_image_size))
-                    image_input = np.expand_dims(image_input, axis=0)
-                    image_to_predict = image_input.copy()
-                    image_to_predict = np.asarray(image_to_predict, dtype=np.float64)
-                except:
-                    raise ValueError("You have parsed in a wrong numpy array for the image")
-            elif (input_type == "stream"):
-                try:
-                    image_input = Image.open(image_input)
-                    image_input = image_input.resize((self.__input_image_size, self.__input_image_size))
-                    image_input = np.expand_dims(image_input, axis=0)
-                    image_to_predict = image_input.copy()
-                    image_to_predict = np.asarray(image_to_predict, dtype=np.float64)
-                    
-                except:
-                    raise ValueError("You have parsed in a wrong stream for the image")
-
-            if (self.__modelType == "mobilenetv2"):
-                image_to_predict = tf.keras.applications.mobilenet_v2.preprocess_input(image_to_predict)
-            elif (self.__modelType == "full"):
-                image_to_predict = tf.keras.applications.mobilenet_v2.preprocess_input(image_to_predict)
-            elif (self.__modelType == "inceptionv3"):
-                image_to_predict = tf.keras.applications.inception_v3.preprocess_input(image_to_predict)
-            elif (self.__modelType == "densenet121"):
-                image_to_predict = tf.keras.applications.densenet.preprocess_input(image_to_predict)
+        if (input_type == "file"):
             try:
-                model = self.__model_collection[0]
-                prediction = model.predict(image_to_predict, steps=1)
-
-                predictiondata = []
-                for pred in prediction:
-                    top_indices = pred.argsort()[-result_count:][::-1]
-                    for i in top_indices:
-                        each_result = []
-                        each_result.append(self.__model_classes[str(i)])
-                        each_result.append(pred[i])
-                        predictiondata.append(each_result)
-
-                for result in predictiondata:
-                    classification_results.append(str(result[0]))
-                    classification_probabilities.append(result[1] * 100)
-                        
+                image_to_predict = tf.keras.preprocessing.image.load_img(image_input, target_size=(self.__input_image_size, self.__input_image_size))
+                image_to_predict = tf.keras.preprocessing.image.img_to_array(image_to_predict, data_format="channels_last")
+                image_to_predict = np.expand_dims(image_to_predict, axis=0)
             except:
-                raise ValueError("Error. Ensure your input image is valid")
+                raise ValueError("You have set a path to an invalid image file.")
+        elif (input_type == "array"):
+            try:
+                image_input = Image.fromarray(np.uint8(image_input))
+                image_input = image_input.resize((self.__input_image_size, self.__input_image_size))
+                image_input = np.expand_dims(image_input, axis=0)
+                image_to_predict = image_input.copy()
+                image_to_predict = np.asarray(image_to_predict, dtype=np.float64)
+            except:
+                raise ValueError("You have parsed in a wrong numpy array for the image")
+        elif (input_type == "stream"):
+            try:
+                image_input = Image.open(image_input)
+                image_input = image_input.resize((self.__input_image_size, self.__input_image_size))
+                image_input = np.expand_dims(image_input, axis=0)
+                image_to_predict = image_input.copy()
+                image_to_predict = np.asarray(image_to_predict, dtype=np.float64)
 
-            return classification_results, classification_probabilities
+            except:
+                raise ValueError("You have parsed in a wrong stream for the image")
+
+        if self.__modelType in ["mobilenetv2", "full"]:
+            image_to_predict = tf.keras.applications.mobilenet_v2.preprocess_input(image_to_predict)
+        elif self.__modelType == "inceptionv3":
+            image_to_predict = tf.keras.applications.inception_v3.preprocess_input(image_to_predict)
+        elif self.__modelType == "densenet121":
+            image_to_predict = tf.keras.applications.densenet.preprocess_input(image_to_predict)
+        classification_results = []
+        classification_probabilities = []
+        try:
+            model = self.__model_collection[0]
+            prediction = model.predict(image_to_predict, steps=1)
+
+            predictiondata = []
+            for pred in prediction:
+                top_indices = pred.argsort()[-result_count:][::-1]
+                for i in top_indices:
+                    each_result = [self.__model_classes[str(i)], pred[i]]
+                    predictiondata.append(each_result)
+
+            for result in predictiondata:
+                classification_results.append(str(result[0]))
+                classification_probabilities.append(result[1] * 100)
+
+        except:
+            raise ValueError("Error. Ensure your input image is valid")
+
+        return classification_results, classification_probabilities
                 
 
     @deprecated(since="2.1.6", message="'.predictImage()' has been deprecated! Please use 'classifyImage()' instead.")

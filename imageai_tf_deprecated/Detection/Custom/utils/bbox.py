@@ -32,16 +32,12 @@ def _interval_overlap(interval_a, interval_b):
     x1, x2 = interval_a
     x3, x4 = interval_b
 
-    if x3 < x1:
-        if x4 < x1:
-            return 0
-        else:
-            return min(x2,x4) - x1
+    if x3 < x1 and x4 < x1 or x3 >= x1 and x2 < x3:
+        return 0
+    elif x3 < x1:
+        return min(x2,x4) - x1
     else:
-        if x2 < x3:
-             return 0
-        else:
-            return min(x2,x4) - x3    
+        return min(x2,x4) - x3    
 
 def bbox_iou(box1, box2):
     intersect_w = _interval_overlap([box1.xmin, box1.xmax], [box2.xmin, box2.xmax])
@@ -63,14 +59,14 @@ def draw_boxes(image, boxes, labels, obj_thresh, quiet=True):
     for box in boxes:
         label_str = ''
         label = -1
-        
+
         for i in range(len(labels)):
             if box.classes[i] > obj_thresh:
                 if label_str != '': label_str += ', '
-                label_str += (labels[i] + ' ' + str(round(box.get_score()*100, 2)) + '%')
+                label_str += f'{labels[i]} {str(round(box.get_score() * 100, 2))}%'
                 label = i
             if not quiet: print(label_str)
-                
+
         if label >= 0:
             text_size = cv2.getTextSize(label_str, cv2.FONT_HERSHEY_SIMPLEX, 1.1e-3 * image.shape[0], 5)
             width, height = text_size[0][0], text_size[0][1]
@@ -88,5 +84,5 @@ def draw_boxes(image, boxes, labels, obj_thresh, quiet=True):
                         fontScale=1e-3 * image.shape[0], 
                         color=(0,0,0), 
                         thickness=2)
-        
+
     return image          

@@ -179,16 +179,12 @@ def _interval_overlap(interval_a, interval_b):
     x1, x2 = interval_a
     x3, x4 = interval_b
 
-    if x3 < x1:
-        if x4 < x1:
-            return 0
-        else:
-            return min(x2,x4) - x1
+    if x3 < x1 and x4 < x1 or x3 >= x1 and x2 < x3:
+        return 0
+    elif x3 < x1:
+        return min(x2,x4) - x1
     else:
-        if x2 < x3:
-             return 0
-        else:
-            return min(x2,x4) - x3          
+        return min(x2,x4) - x3          
 
 def _sigmoid(x):
     return 1. / (1. + np.exp(-x))
@@ -310,34 +306,30 @@ def retrieve_yolo_detections(yolo_result, anchors, min_probability, nms_thresh, 
     # suppress non-maximal boxes
     do_nms(boxes, nms_thresh)
 
-    detections = list()
+    detections = []
     for box in boxes:
         label = -1
-        
+
         for i in range(len(labels_dict.keys())):
             if box.classes[i] > min_probability:
                 label = labels_dict[i]
-                
+
 
                 percentage_probability = box.classes[i] * 100
                 xmin = box.xmin
                 ymin = box.ymin
                 xmax = box.xmax
                 ymax = box.ymax
-                
-                if xmin < 0:
-                    xmin = 0
-                
-                if ymin < 0:
-                    ymin = 0
 
-                detection = dict()
-                detection["name"] = label
-                detection["percentage_probability"] = percentage_probability
-                detection["box_points"] = [ xmin, ymin, xmax, ymax]
-
+                xmin = max(xmin, 0)
+                ymin = max(ymin, 0)
+                detection = {
+                    "name": label,
+                    "percentage_probability": percentage_probability,
+                    "box_points": [xmin, ymin, xmax, ymax],
+                }
                 detections.append(detection)
-    
+
     return detections
 
 
@@ -350,14 +342,14 @@ def draw_boxes(image, box_points, draw_box, label, percentage_probability, color
 
     if label is not None:
         if percentage_probability is None:
-            label = "{}".format(label)
+            label = f"{label}"
         else:
             label = "{} {:.2f}%".format(label, percentage_probability)
     elif percentage_probability is not None:
         label = "{:.2f}".format(percentage_probability)
-    
+
     if label is not None or percentage_probability is not None:
         cv2.putText(image, label, (xmin, ymin - 13), cv2.FONT_HERSHEY_SIMPLEX, 1e-3 * image.shape[0], (255, 0, 0), 2)
         cv2.putText(image, label, (xmin, ymin - 13), cv2.FONT_HERSHEY_SIMPLEX, 1e-3 * image.shape[0], (255, 255, 255), 1)
-        
+
     return image 

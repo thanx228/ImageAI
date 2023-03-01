@@ -43,7 +43,7 @@ class LoadImagesAndLabels(Dataset):
         return self.__nsamples
 
     def __img_path2label_path(self, path : str) -> str:
-        im, lb = os.sep+"images"+os.sep, os.sep+"annotations"+os.sep
+        im, lb = f"{os.sep}images{os.sep}", f"{os.sep}annotations{os.sep}"
         return lb.join(path.rsplit(im, 1)).rsplit(".", 1)[0] + ".txt"
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:

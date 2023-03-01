@@ -16,10 +16,7 @@ def multi_gpu_model(model, gpus):
         batch_size = shape[:1]
         input_shape = shape[1:]
         step = batch_size // parts
-        if i == num_gpus - 1:
-            size = batch_size - step * i
-        else:
-            size = step
+        size = batch_size - step * i if i == num_gpus - 1 else step
         size = tf.concat([size, input_shape], axis=0)
         stride = tf.concat([step, input_shape * 0], axis=0)
         start = stride * i

@@ -185,10 +185,10 @@ class DetectionModelTrainer:
         self.__train_epochs = num_experiments
         self.__pre_trained_model = train_from_pretrained_model
 
-        json_data = dict()
-        json_data["labels"] = self.__model_labels
-        json_data["anchors"] = self.__inference_anchors
-
+        json_data = {
+            "labels": self.__model_labels,
+            "anchors": self.__inference_anchors,
+        }
         with open(os.path.join(self.__json_directory, "detection_config.json"), "w+") as json_file:
             json.dump(json_data, json_file, indent=4, separators=(",", " : "),
                       ensure_ascii=True)
@@ -343,17 +343,15 @@ class DetectionModelTrainer:
         with open(json_path, 'r') as json_file:
             detection_model_json = json.load(json_file)
 
-        temp_anchor_array = []
         new_anchor_array = []
 
-        temp_anchor_array.append(detection_model_json["anchors"][2])
-        temp_anchor_array.append(detection_model_json["anchors"][1])
-        temp_anchor_array.append(detection_model_json["anchors"][0])
-
+        temp_anchor_array = [
+            detection_model_json["anchors"][2],
+            detection_model_json["anchors"][1],
+            detection_model_json["anchors"][0],
+        ]
         for aa in temp_anchor_array:
-            for aaa in aa:
-                new_anchor_array.append(aaa)
-
+            new_anchor_array.extend(iter(aa))
         self.__model_anchors = new_anchor_array
         self.__model_labels = detection_model_json["labels"]
         self.__num_objects = len(self.__model_labels)
@@ -377,8 +375,9 @@ class DetectionModelTrainer:
         if len(valid_ints) == 0:
             print('Validation samples were not provided.')
             print('Please, check your validation samples are correctly provided:')
-            print('\tAnnotations: {}\n\tImages: {}'.format(self.__validation_annotations_folder,
-                                                           self.__validation_images_folder))
+            print(
+                f'\tAnnotations: {self.__validation_annotations_folder}\n\tImages: {self.__validation_images_folder}'
+            )
 
         valid_generator = BatchGenerator(
             instances=valid_ints,
@@ -394,7 +393,7 @@ class DetectionModelTrainer:
             norm=normalize
         )
 
-        results = list()
+        results = []
 
         if os.path.isfile(model_path):
             # model_files must be a list containing the complete path to the files,
@@ -406,7 +405,9 @@ class DetectionModelTrainer:
             model_files = sorted([os.path.join(model_path, file_name) for file_name in os.listdir(model_path)])
             # sort the files to make sure we're always evaluating them on same order
         else:
-            print('model_path must be the path to a .h5 file or a directory. Found {}'.format(model_path))
+            print(
+                f'model_path must be the path to a .h5 file or a directory. Found {model_path}'
+            )
             return results
 
         for model_file in model_files:
@@ -426,8 +427,8 @@ class DetectionModelTrainer:
                         'using_iou': iou_threshold,
                         'using_object_threshold': object_threshold,
                         'using_non_maximum_suppression': nms_threshold,
-                        'average_precision': dict(),
-                        'evaluation_samples': len(valid_ints)
+                        'average_precision': {},
+                        'evaluation_samples': len(valid_ints),
                     }
                     # print the score
                     print("Model File: ", model_file, '\n')
@@ -446,10 +447,12 @@ class DetectionModelTrainer:
 
                     results.append(result_dict)
                 except Exception as e:
-                    print('skipping the evaluation of {} because following exception occurred: {}'.format(model_file, e))
+                    print(
+                        f'skipping the evaluation of {model_file} because following exception occurred: {e}'
+                    )
                     continue
             else:
-                print('skipping the evaluation of {} since it\'s not a .h5 file'.format(model_file))
+                print(f"skipping the evaluation of {model_file} since it\'s not a .h5 file")
 
         return results
 
@@ -470,8 +473,9 @@ class DetectionModelTrainer:
 
         if os.path.exists(valid_annot_folder):
             valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
-            print('Evaluating over {} samples taken from {}'.format(len(valid_ints),
-                                                                    os.path.dirname(valid_annot_folder)))
+            print(
+                f'Evaluating over {len(valid_ints)} samples taken from {os.path.dirname(valid_annot_folder)}'
+            )
         else:
 
             train_portion = 0.8  # use 80% to train and the remaining 20% to evaluate
@@ -486,7 +490,9 @@ class DetectionModelTrainer:
                                        (1 - train_portion)*100,
                                        os.path.dirname(train_annot_folder)))
 
-        print('Training over {} samples  given at {}'.format(len(train_ints), os.path.dirname(train_annot_folder)))
+        print(
+            f'Training over {len(train_ints)} samples  given at {os.path.dirname(train_annot_folder)}'
+        )
 
         # compare the seen labels with the given labels in config.json
         if len(labels) > 0:
@@ -504,7 +510,9 @@ class DetectionModelTrainer:
 
             labels = train_labels.keys()
 
-        max_box_per_image = max([len(inst['object']) for inst in (train_ints + valid_ints)])
+        max_box_per_image = max(
+            len(inst['object']) for inst in (train_ints + valid_ints)
+        )
 
         return train_ints, valid_ints, sorted(labels), max_box_per_image
 
@@ -588,10 +596,9 @@ class DetectionModelTrainer:
             if self.__training_mode:
                 print("Training with transfer learning from pretrained Model")
             template_model.load_weights(self.__pre_trained_model, by_name=True)
-        else:
-            if self.__training_mode:
-                print("Pre-trained Model not provided. Transfer learning not in use.")
-                print("Training will start with 3 warmup experiments")
+        elif self.__training_mode:
+            print("Pre-trained Model not provided. Transfer learning not in use.")
+            print("Training will start with 3 warmup experiments")
 
         if len(multi_gpu) > 1:
             train_model = multi_gpu_model(template_model, gpus=multi_gpu)

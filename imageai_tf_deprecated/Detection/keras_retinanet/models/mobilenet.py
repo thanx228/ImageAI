@@ -46,20 +46,18 @@ class MobileNetBackbone(Backbone):
         if keras.backend.image_data_format() == 'channels_first':
             raise ValueError('Weights for "channels_last" format '
                              'are not available.')
-        if alpha == 1.0:
-            alpha_text = '1_0'
+        if alpha == 0.50:
+            alpha_text = '5_0'
         elif alpha == 0.75:
             alpha_text = '7_5'
-        elif alpha == 0.50:
-            alpha_text = '5_0'
+        elif alpha == 1.0:
+            alpha_text = '1_0'
         else:
             alpha_text = '2_5'
 
-        model_name = 'mobilenet_{}_{}_tf_no_top.h5'.format(alpha_text, rows)
-        weights_url = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.6/' + model_name
-        weights_path = keras.utils.get_file(model_name, weights_url, cache_subdir='models')
-
-        return weights_path
+        model_name = f'mobilenet_{alpha_text}_{rows}_tf_no_top.h5'
+        weights_url = f'https://github.com/fchollet/deep-learning-models/releases/download/v0.6/{model_name}'
+        return keras.utils.get_file(model_name, weights_url, cache_subdir='models')
 
     def validate(self):
         """ Checks whether the backbone string is correct.
@@ -67,7 +65,9 @@ class MobileNetBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in MobileNetBackbone.allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, MobileNetBackbone.allowed_backbones))
+            raise ValueError(
+                f"Backbone (\'{backbone}\') not in allowed backbones ({MobileNetBackbone.allowed_backbones})."
+            )
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.

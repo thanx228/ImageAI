@@ -40,18 +40,18 @@ class ResNetBackbone(Backbone):
         """ Downloads ImageNet weights and returns path to weights file.
         """
         resnet_filename = 'ResNet-{}-model.keras.h5'
-        resnet_resource = 'https://github.com/fizyr/keras-models/releases/download/v0.0.1/{}'.format(resnet_filename)
+        resnet_resource = f'https://github.com/fizyr/keras-models/releases/download/v0.0.1/{resnet_filename}'
         depth = int(self.backbone.replace('resnet', ''))
 
         filename = resnet_filename.format(depth)
         resource = resnet_resource.format(depth)
-        if depth == 50:
-            checksum = '3e9f4e4f77bbe2c9bec13b53ee1c2319'
-        elif depth == 101:
+        if depth == 101:
             checksum = '05dc86924389e5b401a9ea0348a3213c'
         elif depth == 152:
             checksum = '6ee11ef2b135592f8031058820bb9e71'
 
+        elif depth == 50:
+            checksum = '3e9f4e4f77bbe2c9bec13b53ee1c2319'
         return keras.utils.get_file(
             filename,
             resource,
@@ -66,7 +66,9 @@ class ResNetBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, allowed_backbones))
+            raise ValueError(
+                f"Backbone (\'{backbone}\') not in allowed backbones ({allowed_backbones})."
+            )
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.
@@ -101,7 +103,7 @@ def resnet_retinanet(num_classes, backbone='resnet50', inputs=None, modifier=Non
     elif backbone == 'resnet152':
         resnet = keras_resnet.models.ResNet152(inputs, include_top=False, freeze_bn=True)
     else:
-        raise ValueError('Backbone (\'{}\') is invalid.'.format(backbone))
+        raise ValueError(f"Backbone (\'{backbone}\') is invalid.")
 
     # invoke modifier if given
     if modifier:

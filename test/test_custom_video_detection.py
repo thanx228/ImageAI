@@ -16,9 +16,9 @@ video_file_output = os.path.join(test_folder, "data-videos", "dashcam-detected")
 
 
 class CallbackFunctions:
-    def forFrame(frame_number, output_array, output_count, detected_frame):
+    def forFrame(self, output_array, output_count, detected_frame):
         assert isinstance(detected_frame, ndarray)
-        assert isinstance(frame_number, int)
+        assert isinstance(self, int)
         assert isinstance(output_array, list)
         assert isinstance(output_array[0], dict)
         assert isinstance(output_array[0]["name"], str)
@@ -26,13 +26,13 @@ class CallbackFunctions:
         assert isinstance(output_array[0]["box_points"], list)
 
         assert isinstance(output_count, dict)
-        for a_key in dict(output_count).keys():
+        for a_key in dict(output_count):
             assert isinstance(a_key, str)
             assert isinstance(output_count[a_key], int)
 
-    def forSecond(second_number, output_arrays, count_arrays, average_output_count, detected_frame):
+    def forSecond(self, output_arrays, count_arrays, average_output_count, detected_frame):
         assert isinstance(detected_frame, ndarray)
-        assert isinstance(second_number, int)
+        assert isinstance(self, int)
         assert isinstance(output_arrays, list)
         assert isinstance(output_arrays[0], list)
 
@@ -43,12 +43,12 @@ class CallbackFunctions:
 
         assert isinstance(count_arrays, list)
         assert isinstance(count_arrays[0], dict)
-        for a_key in dict(count_arrays[0]).keys():
+        for a_key in dict(count_arrays[0]):
             assert isinstance(a_key, str)
             assert isinstance(count_arrays[0][a_key], int)
 
         assert isinstance(average_output_count, dict)
-        for a_key2 in dict(average_output_count).keys():
+        for a_key2 in dict(average_output_count):
             assert isinstance(a_key2, str)
             assert isinstance(average_output_count[a_key2], int)
 
@@ -63,7 +63,7 @@ def delete_cache(files: List[str]):
 
 
 def test_video_detection_yolov3():
-    delete_cache([video_file_output + ".mp4"])
+    delete_cache([f"{video_file_output}.mp4"])
 
     detector = CustomVideoObjectDetection()
     detector.setModelTypeAsYOLOv3()
@@ -72,14 +72,14 @@ def test_video_detection_yolov3():
     detector.loadModel()
     video_path = detector.detectObjectsFromVideo(input_file_path=video_file, output_file_path=video_file_output, save_detected_video=True, frames_per_second=30, log_progress=True)
 
-    assert os.path.exists(video_file_output + ".mp4")
+    assert os.path.exists(f"{video_file_output}.mp4")
     assert isinstance(video_path, str)
-    
-    delete_cache([video_file_output + ".mp4"])
+
+    delete_cache([f"{video_file_output}.mp4"])
 
 
 def test_video_detection_tiny_yolov3():
-    delete_cache([video_file_output + ".mp4"])
+    delete_cache([f"{video_file_output}.mp4"])
 
     detector = CustomVideoObjectDetection()
     detector.setModelTypeAsTinyYOLOv3()
@@ -88,14 +88,14 @@ def test_video_detection_tiny_yolov3():
     detector.loadModel()
     video_path = detector.detectObjectsFromVideo(input_file_path=video_file, output_file_path=video_file_output, save_detected_video=True, frames_per_second=30, log_progress=True)
 
-    assert os.path.exists(video_file_output + ".mp4")
+    assert os.path.exists(f"{video_file_output}.mp4")
     assert isinstance(video_path, str)
 
-    delete_cache([video_file_output + ".mp4"])
+    delete_cache([f"{video_file_output}.mp4"])
 
 
 def test_video_detection_yolo_analysis():
-    delete_cache([video_file_output + ".mp4"])
+    delete_cache([f"{video_file_output}.mp4"])
 
     detector = CustomVideoObjectDetection()
     detector.setModelTypeAsYOLOv3()
@@ -108,12 +108,12 @@ def test_video_detection_yolo_analysis():
 
             video_path = detector.detectObjectsFromVideo(input_file_path=video_file, output_file_path=video_file_output, save_detected_video=True, frames_per_second=30, log_progress=True, per_frame_function=frameFunc, per_second_function=secondFunc, return_detected_frame=True)
 
-            assert os.path.exists(video_file_output + ".mp4")
+            assert os.path.exists(f"{video_file_output}.mp4")
             assert isinstance(video_path, str)
 
             frameFunc.assert_called()
             secondFunc.assert_called()
 
-    delete_cache([video_file_output + ".mp4"])
+    delete_cache([f"{video_file_output}.mp4"])
 
 

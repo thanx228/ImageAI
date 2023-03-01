@@ -85,28 +85,28 @@ class DenseNet121Pretrained:
         """
         Loads the mobilenet vison weight into the model architecture.
         """
-        if not self.__has_loaded_weights:
-            try:
-                import re
-                state_dict = torch.load(self.__model_path, map_location=self.__device)
-                # '.'s are no longer allowed in module names, but previous densenet layers
-                # as provided by the pytorch organization has names that uses '.'s.
-                pattern = re.compile(
-                        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
-                                "(?:weight|bias|running_mean|running_var))$"
-                        )
-                for key in list(state_dict.keys()):
-                    res = pattern.match(key)
-                    if res:
-                        new_key = res.group(1) + res.group(2)
-                        state_dict[new_key] = state_dict[key]
-                        del state_dict[key]
-                self.__model.load_state_dict(state_dict)
-                self.__has_loaded_weights = True
-                self.__model.eval()
-            except Exception:
-                print("Weight loading failed.\nEnsure the model path is"
-                    " set and the weight file is in the specified model path.")
+        if self.__has_loaded_weights:
+            return
+        try:
+            import re
+            state_dict = torch.load(self.__model_path, map_location=self.__device)
+            # '.'s are no longer allowed in module names, but previous densenet layers
+            # as provided by the pytorch organization has names that uses '.'s.
+            pattern = re.compile(
+                    r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
+                            "(?:weight|bias|running_mean|running_var))$"
+                    )
+            for key in list(state_dict.keys()):
+                if res := pattern.match(key):
+                    new_key = res.group(1) + res.group(2)
+                    state_dict[new_key] = state_dict[key]
+                    del state_dict[key]
+            self.__model.load_state_dict(state_dict)
+            self.__has_loaded_weights = True
+            self.__model.eval()
+        except Exception:
+            print("Weight loading failed.\nEnsure the model path is"
+                " set and the weight file is in the specified model path.")
 
     def classify(self, image_path : str, top_n : int = 5, verbose : bool = True) -> List[List[Tuple[str, str]]]:
         """

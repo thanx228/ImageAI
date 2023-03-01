@@ -9,19 +9,19 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
             cache = pickle.load(handle)
         all_insts, seen_labels = cache['all_insts'], cache['seen_labels']
     else:
-        all_insts = list()
-        seen_labels = dict()
-        
+        all_insts = []
+        seen_labels = {}
+
         for ann in sorted(os.listdir(ann_dir)):
-            img = {'object': list()}
+            img = {'object': []}
 
             try:
                 tree = ET.parse(os.path.join(ann_dir, ann))
             except Exception as e:
                 print(e)
-                print('Ignore this bad annotation: ' + os.path.join(ann_dir, ann))
+                print(f'Ignore this bad annotation: {os.path.join(ann_dir, ann)}')
                 continue
-            
+
             for elem in tree.iter():
                 if 'filename' in elem.tag:
                     img['filename'] = os.path.join(img_dir, elem.text)
@@ -31,7 +31,7 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
                     img['height'] = int(elem.text)
                 if 'object' in elem.tag or 'part' in elem.tag:
                     obj = {}
-                    
+
                     for attr in list(elem):
                         if 'name' in attr.tag:
                             obj['name'] = attr.text
@@ -40,12 +40,12 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
                                 seen_labels[obj['name']] += 1
                             else:
                                 seen_labels[obj['name']] = 1
-                            
+
                             if len(labels) > 0 and obj['name'] not in labels:
                                 break
                             else:
                                 img['object'] += [obj]
-                                
+
                         if 'bndbox' in attr.tag:
                             for dim in list(attr):
                                 if 'xmin' in dim.tag:
@@ -63,5 +63,5 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
         cache = {'all_insts': all_insts, 'seen_labels': seen_labels}
         with open(cache_name, 'wb') as handle:
             pickle.dump(cache, handle, protocol=pickle.HIGHEST_PROTOCOL)    
-                        
+
     return all_insts, seen_labels

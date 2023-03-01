@@ -166,8 +166,7 @@ def guess_shapes(image_shape, pyramid_levels):
         A list of image shapes at each pyramid level.
     """
     image_shape = np.array(image_shape[:2])
-    image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x) for x in pyramid_levels]
-    return image_shapes
+    return [(image_shape + 2 ** x - 1) // (2 ** x) for x in pyramid_levels]
 
 
 def anchors_for_shape(
@@ -292,12 +291,16 @@ def bbox_transform(anchors, gt_boxes, mean=None, std=None):
     if isinstance(mean, (list, tuple)):
         mean = np.array(mean)
     elif not isinstance(mean, np.ndarray):
-        raise ValueError('Expected mean to be a np.ndarray, list or tuple. Received: {}'.format(type(mean)))
+        raise ValueError(
+            f'Expected mean to be a np.ndarray, list or tuple. Received: {type(mean)}'
+        )
 
     if isinstance(std, (list, tuple)):
         std = np.array(std)
     elif not isinstance(std, np.ndarray):
-        raise ValueError('Expected std to be a np.ndarray, list or tuple. Received: {}'.format(type(std)))
+        raise ValueError(
+            f'Expected std to be a np.ndarray, list or tuple. Received: {type(std)}'
+        )
 
     anchor_widths  = anchors[:, 2] - anchors[:, 0]
     anchor_heights = anchors[:, 3] - anchors[:, 1]
@@ -313,6 +316,4 @@ def bbox_transform(anchors, gt_boxes, mean=None, std=None):
     targets = np.stack((targets_dx1, targets_dy1, targets_dx2, targets_dy2))
     targets = targets.T
 
-    targets = (targets - mean) / std
-
-    return targets
+    return (targets - mean) / std

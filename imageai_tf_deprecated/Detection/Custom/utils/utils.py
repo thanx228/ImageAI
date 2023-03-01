@@ -41,8 +41,14 @@ def evaluate(model,
         A dict mapping class names to mAP scores.
     """    
     # gather all detections and annotations
-    all_detections     = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
-    all_annotations    = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
+    all_detections = [
+        [None for _ in range(generator.num_classes())]
+        for _ in range(generator.size())
+    ]
+    all_annotations = [
+        [None for _ in range(generator.num_classes())]
+        for _ in range(generator.size())
+    ]
 
     for i in range(generator.size()):
         raw_image = [generator.load_image(i)]
@@ -52,30 +58,30 @@ def evaluate(model,
 
         score = np.array([box.get_score() for box in pred_boxes])
         pred_labels = np.array([box.label for box in pred_boxes])        
-        
+
         if len(pred_boxes) > 0:
             pred_boxes = np.array([[box.xmin, box.ymin, box.xmax, box.ymax, box.get_score()] for box in pred_boxes]) 
         else:
             pred_boxes = np.array([[]])  
-        
+
         # sort the boxes and the labels according to scores
         score_sort = np.argsort(-score)
         pred_labels = pred_labels[score_sort]
         pred_boxes  = pred_boxes[score_sort]
-        
+
         # copy detections to all_detections
         for label in range(generator.num_classes()):
             all_detections[i][label] = pred_boxes[pred_labels == label, :]
 
         annotations = generator.load_annotation(i)
-        
+
         # copy detections to all_annotations
         for label in range(generator.num_classes()):
             all_annotations[i][label] = annotations[annotations[:, 4] == label, :4].copy()
 
     # compute mAP by comparing all detections and all annotations
     average_precisions = {}
-    
+
     for label in range(generator.num_classes()):
         false_positives = np.zeros((0,))
         true_positives  = np.zeros((0,))
@@ -324,9 +330,7 @@ def compute_ap(recall, precision):
     # where X axis (recall) changes value
     i = np.where(mrec[1:] != mrec[:-1])[0]
 
-    # and sum (\Delta recall) * prec
-    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    return ap     
+    return np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])     
 
 
 def _softmax(x, axis=-1):

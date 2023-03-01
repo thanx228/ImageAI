@@ -351,7 +351,7 @@ def create_generators(args, preprocess_image):
             **common_args
         )
     else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+        raise ValueError(f'Invalid data type received: {args.dataset_type}')
 
     return train_generator, validation_generator
 
@@ -370,19 +370,21 @@ def check_args(parsed_args):
 
     if parsed_args.multi_gpu > 1 and parsed_args.batch_size < parsed_args.multi_gpu:
         raise ValueError(
-            "Batch size ({}) must be equal to or higher than the number of GPUs ({})".format(parsed_args.batch_size,
-                                                                                             parsed_args.multi_gpu))
+            f"Batch size ({parsed_args.batch_size}) must be equal to or higher than the number of GPUs ({parsed_args.multi_gpu})"
+        )
 
     if parsed_args.multi_gpu > 1 and parsed_args.snapshot:
         raise ValueError(
-            "Multi GPU training ({}) and resuming from snapshots ({}) is not supported.".format(parsed_args.multi_gpu,
-                                                                                                parsed_args.snapshot))
+            f"Multi GPU training ({parsed_args.multi_gpu}) and resuming from snapshots ({parsed_args.snapshot}) is not supported."
+        )
 
     if parsed_args.multi_gpu > 1 and not parsed_args.multi_gpu_force:
         raise ValueError("Multi-GPU support is experimental, use at own risk! Run with --multi-gpu-force if you wish to continue.")
 
     if 'resnet' not in parsed_args.backbone:
-        warnings.warn('Using experimental backbone {}. Only resnet50 has been properly tested.'.format(parsed_args.backbone))
+        warnings.warn(
+            f'Using experimental backbone {parsed_args.backbone}. Only resnet50 has been properly tested.'
+        )
 
     return parsed_args
 

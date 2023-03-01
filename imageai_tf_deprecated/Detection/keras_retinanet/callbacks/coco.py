@@ -61,5 +61,5 @@ class CocoEval(keras.callbacks.Callback):
                 writer = tf.summary.create_file_writer(self.tensorboard.log_dir)
                 with writer.as_default():
                     for index, result in enumerate(coco_eval_stats):
-                        tf.summary.scalar('{}. {}'.format(index + 1, coco_tag[index]), result, step=epoch)
+                        tf.summary.scalar(f'{index + 1}. {coco_tag[index]}', result, step=epoch)
                     writer.flush()

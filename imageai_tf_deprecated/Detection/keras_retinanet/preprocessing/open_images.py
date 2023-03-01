@@ -30,11 +30,8 @@ def load_hierarchy(metadata_dir, version='v4'):
     hierarchy = None
     if version == 'challenge2018':
         hierarchy = 'bbox_labels_500_hierarchy.json'
-    elif version == 'v4':
+    elif version in ['v4', 'v3']:
         hierarchy = 'bbox_labels_600_hierarchy.json'
-    elif version == 'v3':
-        hierarchy = 'bbox_labels_600_hierarchy.json'
-
     hierarchy_json = os.path.join(metadata_dir, hierarchy)
     with open(hierarchy_json) as f:
         hierarchy_data = json.loads(f.read())
@@ -49,9 +46,7 @@ def load_hierarchy_children(hierarchy):
         for subcategory in hierarchy['Subcategory']:
             children = load_hierarchy_children(subcategory)
 
-            for c in children:
-                res.append(c)
-
+            res.extend(iter(children))
     return res
 
 
@@ -68,7 +63,7 @@ def find_hierarchy_parent(hierarchy, parent_cls):
 
 
 def get_labels(metadata_dir, version='v4'):
-    if version == 'v4' or version == 'challenge2018':
+    if version in ['v4', 'challenge2018']:
         csv_file = 'class-descriptions-boxable.csv' if version == 'v4' else 'challenge-2018-class-descriptions-500.csv'
 
         boxable_classes_descriptions = os.path.join(metadata_dir, csv_file)
@@ -111,14 +106,16 @@ def generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, 
     validation_image_ids = {}
 
     if version == 'v4':
-        annotations_path = os.path.join(metadata_dir, subset, '{}-annotations-bbox.csv'.format(subset))
+        annotations_path = os.path.join(
+            metadata_dir, subset, f'{subset}-annotations-bbox.csv'
+        )
     elif version == 'challenge2018':
         validation_image_ids_path = os.path.join(metadata_dir, 'challenge-2018-image-ids-valset-od.csv')
 
         with open(validation_image_ids_path, 'r') as csv_file:
             reader = csv.DictReader(csv_file, fieldnames=['ImageID'])
             next(reader)
-            for line, row in enumerate(reader):
+            for row in reader:
                 image_id = row['ImageID']
                 validation_image_ids[image_id] = True
 
@@ -130,7 +127,7 @@ def generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, 
                   'XMin', 'XMax', 'YMin', 'YMax',
                   'IsOccluded', 'IsTruncated', 'IsGroupOf', 'IsDepiction', 'IsInside']
 
-    id_annotations = dict()
+    id_annotations = {}
     with open(annotations_path, 'r') as csv_file:
         reader = csv.DictReader(csv_file, fieldnames=fieldnames)
         next(reader)
@@ -140,13 +137,15 @@ def generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, 
             frame = row['ImageID']
 
             if version == 'challenge2018':
-                if subset == 'train':
-                    if frame in validation_image_ids:
-                        continue
-                elif subset == 'validation':
-                    if frame not in validation_image_ids:
-                        continue
-                else:
+                if (
+                    subset == 'train'
+                    and frame in validation_image_ids
+                    or subset != 'train'
+                    and subset == 'validation'
+                    and frame not in validation_image_ids
+                ):
+                    continue
+                elif subset not in ['train', 'validation']:
                     raise NotImplementedError('This generator handles only the train and validation subsets')
 
             class_name = row['LabelName']
@@ -159,9 +158,9 @@ def generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, 
             if version == 'challenge2018':
                 # We recommend participants to use the provided subset of the training set as a validation set.
                 # This is preferable over using the V4 val/test sets, as the training set is more densely annotated.
-                img_path = os.path.join(main_dir, 'images', 'train', frame + '.jpg')
+                img_path = os.path.join(main_dir, 'images', 'train', f'{frame}.jpg')
             else:
-                img_path = os.path.join(main_dir, 'images', subset, frame + '.jpg')
+                img_path = os.path.join(main_dir, 'images', subset, f'{frame}.jpg')
 
             if frame in images_sizes:
                 width, height = images_sizes[frame]
@@ -187,16 +186,20 @@ def generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, 
 
             # Check that the bounding box is valid.
             if x2 <= x1:
-                raise ValueError('line {}: x2 ({}) must be higher than x1 ({})'.format(line, x2, x1))
+                raise ValueError(f'line {line}: x2 ({x2}) must be higher than x1 ({x1})')
             if y2 <= y1:
-                raise ValueError('line {}: y2 ({}) must be higher than y1 ({})'.format(line, y2, y1))
+                raise ValueError(f'line {line}: y2 ({y2}) must be higher than y1 ({y1})')
 
             if y2_int == y1_int:
-                warnings.warn('filtering line {}: rounding y2 ({}) and y1 ({}) makes them equal'.format(line, y2, y1))
+                warnings.warn(
+                    f'filtering line {line}: rounding y2 ({y2}) and y1 ({y1}) makes them equal'
+                )
                 continue
 
             if x2_int == x1_int:
-                warnings.warn('filtering line {}: rounding x2 ({}) and x1 ({}) makes them equal'.format(line, x2, x1))
+                warnings.warn(
+                    f'filtering line {line}: rounding x2 ({x2}) and x1 ({x1}) makes them equal'
+                )
                 continue
 
             img_id = row['ImageID']
@@ -232,7 +235,7 @@ class OpenImagesGenerator(Generator):
             self.base_dir     = os.path.join(main_dir, 'images', subset)
 
         metadata_dir          = os.path.join(main_dir, metadata)
-        annotation_cache_json = os.path.join(annotation_cache_dir, subset + '.json')
+        annotation_cache_json = os.path.join(annotation_cache_dir, f'{subset}.json')
 
         self.hierarchy          = load_hierarchy(metadata_dir, version=version)
         id_to_labels, cls_index = get_labels(metadata_dir, version=version)
@@ -249,7 +252,7 @@ class OpenImagesGenerator(Generator):
         else:
             self.id_to_labels = id_to_labels
 
-        self.id_to_image_id = dict([(i, k) for i, k in enumerate(self.annotations)])
+        self.id_to_image_id = dict(list(enumerate(self.annotations)))
 
         super(OpenImagesGenerator, self).__init__(**kwargs)
 
@@ -284,12 +287,14 @@ class OpenImagesGenerator(Generator):
                     break
 
             if parent_cls is None:
-                raise Exception('Couldnt find label {}'.format(parent_label))
+                raise Exception(f'Couldnt find label {parent_label}')
 
             parent_tree = find_hierarchy_parent(self.hierarchy, parent_cls)
 
             if parent_tree is None:
-                raise Exception('Couldnt find parent {} in the semantic hierarchical tree'.format(parent_label))
+                raise Exception(
+                    f'Couldnt find parent {parent_label} in the semantic hierarchical tree'
+                )
 
             children = load_hierarchy_children(parent_tree)
 
@@ -311,7 +316,7 @@ class OpenImagesGenerator(Generator):
                     ann['cls_id'] = id_map[cls_id]
                     filtered_boxes.append(ann)
 
-            if len(filtered_boxes) > 0:
+            if filtered_boxes:
                 filtered_annotations[k] = {'w': img_ann['w'], 'h': img_ann['h'], 'boxes': filtered_boxes}
 
         children_id_to_labels = dict([(id_map[i], l) for (i, l) in children_id_to_labels.items()])
@@ -346,7 +351,7 @@ class OpenImagesGenerator(Generator):
         return float(width) / float(height)
 
     def image_path(self, image_index):
-        path = os.path.join(self.base_dir, self.id_to_image_id[image_index] + '.jpg')
+        path = os.path.join(self.base_dir, f'{self.id_to_image_id[image_index]}.jpg')
         return path
 
     def load_image(self, image_index):

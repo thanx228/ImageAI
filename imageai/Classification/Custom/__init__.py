@@ -98,9 +98,8 @@ class ClassificationModelTrainer():
                     "(?:weight|bias|running_mean|running_var))$"
                     )
             for key in list(state_dict.keys()):
-                res = pattern.match(key)
-                if res:
-                    new_key = res.group(1) + res.group(2)
+                if res := pattern.match(key):
+                    new_key = res[1] + res[2]
                     state_dict[new_key] = state_dict[key]
                     del state_dict[key]
 
@@ -213,7 +212,7 @@ class ClassificationModelTrainer():
                 transfer_from_model: str = None,
                 verbose : bool = True
             ) -> None:
-        
+
         """
         'trainModel()' function starts the model actual training. It accepts the following values:
         - num_experiments: Also known as epochs, is the number of times the network will process all the images in the training dataset
@@ -241,20 +240,18 @@ class ClassificationModelTrainer():
         # Load training parameters for the specified model type
         self.__set_training_param()
 
-        
+
         # Create output directory to save trained models and json mappings
         if not model_directory:
             model_directory = os.path.join(self.__data_dir, "models")
 
         if not os.path.exists(model_directory):
             os.mkdir(model_directory)
-        
+
         # Dump class mappings to json file
         with open(os.path.join(model_directory, f"{self.__dataset_name}_model_classes.json"), "w") as f:
-            classes_dict = {}
             class_list = sorted(self.__class_names)
-            for i in range(len(class_list)):
-                classes_dict[str(i)] = class_list[i]
+            classes_dict = {str(i): class_list[i] for i in range(len(class_list))}
             json.dump(classes_dict, f)
 
         # Prep model weights for training
@@ -315,7 +312,7 @@ class ClassificationModelTrainer():
                     print(f"{phase} Loss: {epoch_loss:.4f} Accuracy: {epoch_acc:.4f}")
                 if phase == "test" and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    recent_save_name = self.__model_type+f"-{self.__dataset_name}-test_acc_{best_acc:.5f}_epoch-{epoch}.pt"
+                    recent_save_name = f"{self.__model_type}-{self.__dataset_name}-test_acc_{best_acc:.5f}_epoch-{epoch}.pt"
                     if prev_save_name:
                         os.remove(os.path.join(model_directory, prev_save_name))
                     best_model_weights = copy.deepcopy(self.__model.state_dict())
@@ -323,7 +320,7 @@ class ClassificationModelTrainer():
                             best_model_weights, os.path.join(model_directory, recent_save_name)
                         )
                     prev_save_name = recent_save_name
-            
+
 
         time_elapsed = time.time() - since
         print(f"Training completed in {time_elapsed//60:.0f}m {time_elapsed % 60:.0f}s")
@@ -372,11 +369,10 @@ class CustomImageClassification:
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         if type(image_input) == str:
-            if os.path.isfile(image_input):
-                img = Image.open(image_input).convert("RGB")
-                images.append(preprocess(img))
-            else:
+            if not os.path.isfile(image_input):
                 raise ValueError(f"image path '{image_input}' is not found or a valid file")
+            img = Image.open(image_input).convert("RGB")
+            images.append(preprocess(img))
         elif type(image_input) == np.ndarray:
             img = Image.fromarray(image_input).convert("RGB")
             images.append(preprocess(img))
@@ -384,7 +380,7 @@ class CustomImageClassification:
             img = image_input.convert("RGB")
             images.append(preprocess(img))
         else:
-            raise ValueError(f"Invalid image input format")
+            raise ValueError("Invalid image input format")
 
         return torch.stack(images)
     
@@ -399,14 +395,13 @@ class CustomImageClassification:
         """
         Sets the path to the pretrained weight.
         """
-        if os.path.isfile(path):
-            extension_check(path)
-            self.__model_path = path
-            self.__model_loaded = False
-        else:
+        if not os.path.isfile(path):
             raise ValueError(
                 f"The path '{path}' isn't a valid file. Ensure you specify the path to a valid trained model file."
             )
+        extension_check(path)
+        self.__model_path = path
+        self.__model_loaded = False
     
     def setJsonPath(self, path : str) -> None:
         """
@@ -463,55 +458,55 @@ class CustomImageClassification:
         in the setModelPath() function.
         :return:
         """
-        if not self.__model_loaded:
-            self.__load_classes()
-            try:
-                # change the last layer of the networks to conform to the number
-                # of unique classes in the custom dataset used to train the custom
-                # model
+        if self.__model_loaded:
+            return
+        self.__load_classes()
+        try:
+            # change the last layer of the networks to conform to the number
+            # of unique classes in the custom dataset used to train the custom
+            # model
 
-                if self.__model_type == "resnet50":
-                    self.__model = resnet50(pretrained=False)
-                    in_features = self.__model.fc.in_features
-                    self.__model.fc = nn.Linear(in_features, len(self.__class_names))
-                elif self.__model_type == "mobilenet_v2":
-                    self.__model = mobilenet_v2(pretrained=False)
-                    in_features = self.__model.classifier[1].in_features
-                    self.__model.classifier[1] = nn.Linear(in_features, len(self.__class_names))
-                elif self.__model_type == "inception_v3":
-                    self.__model = inception_v3(pretrained=False)
-                    in_features = self.__model.fc.in_features
-                    self.__model.fc = nn.Linear(in_features, len(self.__class_names))
-                elif self.__model_type == "densenet121":
-                    self.__model = densenet121(pretrained=False)
-                    in_features = self.__model.classifier.in_features
-                    self.__model.classifier = nn.Linear(in_features, len(self.__class_names))
-                else:
-                    raise RuntimeError("Unknown model type.\nEnsure the model type is properly set.")
+            if self.__model_type == "resnet50":
+                self.__model = resnet50(pretrained=False)
+                in_features = self.__model.fc.in_features
+                self.__model.fc = nn.Linear(in_features, len(self.__class_names))
+            elif self.__model_type == "mobilenet_v2":
+                self.__model = mobilenet_v2(pretrained=False)
+                in_features = self.__model.classifier[1].in_features
+                self.__model.classifier[1] = nn.Linear(in_features, len(self.__class_names))
+            elif self.__model_type == "inception_v3":
+                self.__model = inception_v3(pretrained=False)
+                in_features = self.__model.fc.in_features
+                self.__model.fc = nn.Linear(in_features, len(self.__class_names))
+            elif self.__model_type == "densenet121":
+                self.__model = densenet121(pretrained=False)
+                in_features = self.__model.classifier.in_features
+                self.__model.classifier = nn.Linear(in_features, len(self.__class_names))
+            else:
+                raise RuntimeError("Unknown model type.\nEnsure the model type is properly set.")
 
-                state_dict = torch.load(self.__model_path, map_location=self.__device)
+            state_dict = torch.load(self.__model_path, map_location=self.__device)
 
-                if self.__model_type == "densenet121":
-                    # '.'s are no longer allowed in module names, but previous densenet layers
-                    # as provided by the pytorch organization has names that uses '.'s.
-                    pattern = re.compile(
-                            r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
-                                    "(?:weight|bias|running_mean|running_var))$"
-                            )
-                    for key in list(state_dict.keys()):
-                        res = pattern.match(key)
-                        if res:
-                            new_key = res.group(1) + res.group(2)
-                            state_dict[new_key] = state_dict[key]
-                            del state_dict[key]
+            if self.__model_type == "densenet121":
+                # '.'s are no longer allowed in module names, but previous densenet layers
+                # as provided by the pytorch organization has names that uses '.'s.
+                pattern = re.compile(
+                        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
+                                "(?:weight|bias|running_mean|running_var))$"
+                        )
+                for key in list(state_dict.keys()):
+                    if res := pattern.match(key):
+                        new_key = res[1] + res[2]
+                        state_dict[new_key] = state_dict[key]
+                        del state_dict[key]
 
-                self.__model.load_state_dict(state_dict)
-                self.__model.to(self.__device).eval()
-                self.__model_loaded = True
+            self.__model.load_state_dict(state_dict)
+            self.__model.to(self.__device).eval()
+            self.__model_loaded = True
 
-            except Exception as e:
-                raise Exception("Weight loading failed.\nEnsure the model path is"
-                    " set and the weight file is in the specified model path.")
+        except Exception as e:
+            raise Exception("Weight loading failed.\nEnsure the model path is"
+                " set and the weight file is in the specified model path.")
 
     def classifyImage(self, image_input: Union[str, np.ndarray, Image.Image], result_count: int) -> Tuple[List[str], List[float]]:
         """
@@ -535,12 +530,12 @@ class CustomImageClassification:
 
         images = self.__load_image(image_input)
         images = images.to(self.__device)
-    
+
         with torch.no_grad():
             output = self.__model(images)
         probabilities = torch.softmax(output, dim=1)
         topN_prob, topN_catid = torch.topk(probabilities, result_count)
-        
+
         predictions = [
                 [
                     (self.__class_names[topN_catid[i][j]], topN_prob[i][j].item()*100)
@@ -548,13 +543,13 @@ class CustomImageClassification:
                 ]
                 for i in range(topN_prob.shape[0])
             ]
-        
+
         labels_pred = []
         probabilities_pred = []
 
-        for idx, pred in enumerate(predictions):
+        for pred in predictions:
             for label, score in pred:
                 labels_pred.append(label)
                 probabilities_pred.append(round(score, 4))
-        
+
         return labels_pred, probabilities_pred

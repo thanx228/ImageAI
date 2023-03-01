@@ -42,13 +42,13 @@ class VGGBackbone(Backbone):
             resource = keras.applications.vgg19.vgg19.WEIGHTS_PATH_NO_TOP
             checksum = '253f8cb515780f3b799900260a226db6'
         else:
-            raise ValueError("Backbone '{}' not recognized.".format(self.backbone))
+            raise ValueError(f"Backbone '{self.backbone}' not recognized.")
 
         return keras.utils.get_file(
-            '{}_weights_tf_dim_ordering_tf_kernels_notop.h5'.format(self.backbone),
+            f'{self.backbone}_weights_tf_dim_ordering_tf_kernels_notop.h5',
             resource,
             cache_subdir='models',
-            file_hash=checksum
+            file_hash=checksum,
         )
 
     def validate(self):
@@ -57,7 +57,9 @@ class VGGBackbone(Backbone):
         allowed_backbones = ['vgg16', 'vgg19']
 
         if self.backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(self.backbone, allowed_backbones))
+            raise ValueError(
+                f"Backbone (\'{self.backbone}\') not in allowed backbones ({allowed_backbones})."
+            )
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.
@@ -87,7 +89,7 @@ def vgg_retinanet(num_classes, backbone='vgg16', inputs=None, modifier=None, **k
     elif backbone == 'vgg19':
         vgg = keras.applications.VGG19(input_tensor=inputs, include_top=False, weights=None)
     else:
-        raise ValueError("Backbone '{}' not recognized.".format(backbone))
+        raise ValueError(f"Backbone '{backbone}' not recognized.")
 
     if modifier:
         vgg = modifier(vgg)

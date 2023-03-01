@@ -39,40 +39,40 @@ def test_object_detection_yolov3(input_image, output_type, extract_objects):
     detector.setJsonPath(os.path.join(test_folder, "data-json", "number-plate-dataset-imageai_yolov3_detection_config.json"))
     detector.loadModel()
 
-    output_img_path = os.path.join(test_folder, "data-images", str(uuid.uuid4()) + ".jpg")
+    output_img_path = os.path.join(
+        test_folder, "data-images", f"{str(uuid.uuid4())}.jpg"
+    )
 
     if output_type == "array":
         if extract_objects:
             output_image_array, detections, extracted_objects = detector.detectObjectsFromImage(input_image=input_image, output_type=output_type, extract_detected_objects=extract_objects)
 
-            assert len(detections) > 0
             assert len(extracted_objects) > 0
             for extracted_obj in extracted_objects:
                 assert type(extracted_obj) == np.ndarray
         else:
             output_image_array, detections = detector.detectObjectsFromImage(input_image=input_image, output_type=output_type)
             assert type(output_image_array) == np.ndarray
-            assert len(detections) > 0
-    else:
-        if extract_objects:
-            detections, extracted_object_paths = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path, extract_detected_objects=True)
+        assert len(detections) > 0
+    elif extract_objects:
+        detections, extracted_object_paths = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path, extract_detected_objects=True)
 
-            assert len(detections) > 0
-            assert os.path.isfile(output_img_path)
-            assert len(extracted_object_paths) > 0
-            delete_cache(
-                extracted_object_paths
-            )
-            delete_cache(
-                [extracted_object_paths[0], output_img_path]
-            )
-        else:
-            detections = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path)
-            assert len(detections) > 0
-            delete_cache([output_img_path])
+        assert len(detections) > 0
+        assert os.path.isfile(output_img_path)
+        assert len(extracted_object_paths) > 0
+        delete_cache(
+            extracted_object_paths
+        )
+        delete_cache(
+            [extracted_object_paths[0], output_img_path]
+        )
+    else:
+        detections = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path)
+        assert len(detections) > 0
+        delete_cache([output_img_path])
 
     assert type(detections) == list
-    
+
 
     for eachObject in detections:
         assert type(eachObject) == dict
@@ -107,40 +107,40 @@ def test_object_detection_tiny_yolov3(input_image, output_type, extract_objects)
     detector.setJsonPath(os.path.join(test_folder, "data-json", "number-plate-dataset-imageai_tiny_yolov3_detection_config.json"))
     detector.loadModel()
 
-    output_img_path = os.path.join(test_folder, "data-images", str(uuid.uuid4()) + ".jpg")
+    output_img_path = os.path.join(
+        test_folder, "data-images", f"{str(uuid.uuid4())}.jpg"
+    )
 
     if output_type == "array":
         if extract_objects:
             output_image_array, detections, extracted_objects = detector.detectObjectsFromImage(input_image=input_image, output_type=output_type, extract_detected_objects=extract_objects)
 
-            assert len(detections) > 0
             assert len(extracted_objects) == len(detections)
             for extracted_obj in extracted_objects:
                 assert type(extracted_obj) == np.ndarray
         else:
             output_image_array, detections = detector.detectObjectsFromImage(input_image=input_image, output_type=output_type)
             assert type(output_image_array) == np.ndarray
-            assert len(detections) > 0
-    else:
-        if extract_objects:
-            detections, extracted_object_paths = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path, extract_detected_objects=True)
+        assert len(detections) > 0
+    elif extract_objects:
+        detections, extracted_object_paths = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path, extract_detected_objects=True)
 
-            assert len(detections) > 0
-            assert os.path.isfile(output_img_path)
-            assert len(extracted_object_paths) == len(detections)
-            delete_cache(
-                extracted_object_paths
-            )
-            delete_cache(
-                [extracted_object_paths[0], output_img_path]
-            )
-        else:
-            detections = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path)
-            assert len(detections) > 0
-            delete_cache([output_img_path])
+        assert len(detections) > 0
+        assert os.path.isfile(output_img_path)
+        assert len(extracted_object_paths) == len(detections)
+        delete_cache(
+            extracted_object_paths
+        )
+        delete_cache(
+            [extracted_object_paths[0], output_img_path]
+        )
+    else:
+        detections = detector.detectObjectsFromImage(input_image=input_image, output_image_path=output_img_path)
+        assert len(detections) > 0
+        delete_cache([output_img_path])
 
     assert type(detections) == list
-    
+
 
     for eachObject in detections:
         assert type(eachObject) == dict

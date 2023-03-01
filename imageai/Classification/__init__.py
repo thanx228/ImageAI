@@ -82,11 +82,10 @@ class ImageClassification:
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         if type(image_input) == str:
-            if os.path.isfile(image_input):
-                img = Image.open(image_input).convert("RGB")
-                images.append(preprocess(img))
-            else:
+            if not os.path.isfile(image_input):
                 raise ValueError(f"image path '{image_input}' is not found or a valid file")
+            img = Image.open(image_input).convert("RGB")
+            images.append(preprocess(img))
         elif type(image_input) == np.ndarray:
             img = Image.fromarray(image_input).convert("RGB")
             images.append(preprocess(img))
@@ -94,7 +93,7 @@ class ImageClassification:
             img = image_input.convert("RGB")
             images.append(preprocess(img))
         else:
-            raise ValueError(f"Invalid image input format")
+            raise ValueError("Invalid image input format")
 
         return torch.stack(images)
 
@@ -103,7 +102,7 @@ class ImageClassification:
         'setModelTypeAsResNet50()' is used to set the model type to the ResNet50 model.
         :return:
         """
-        if self.__model_type == None:
+        if self.__model_type is None:
             self.__model_type = "resnet50"
 
     def setModelTypeAsDenseNet121(self):
@@ -111,7 +110,7 @@ class ImageClassification:
         'setModelTypeAsDenseNet121()' is used to set the model type to the DenseNet121 model.
         :return:
         """
-        if self.__model_type == None:
+        if self.__model_type is None:
             self.__model_type = "densenet121"
     
     def setModelTypeAsInceptionV3(self):
@@ -119,7 +118,7 @@ class ImageClassification:
         'setModelTypeAsInceptionV3()' is used to set the model type to the InceptionV3 model.
         :return:
         """
-        if self.__model_type == None:
+        if self.__model_type is None:
             self.__model_type = "inceptionv3"
     
     def setModelTypeAsMobileNetV2(self):
@@ -127,7 +126,7 @@ class ImageClassification:
         'setModelTypeAsMobileNetV2()' is used to set the model type to the MobileNetV2 model.
         :return:
         """
-        if self.__model_type == None:
+        if self.__model_type is None:
             self.__model_type = "mobilenetv2"
     
     def useCPU(self):
@@ -146,45 +145,45 @@ class ImageClassification:
         in the setModelPath() function.
         :return:
         """
-        if not self.__model_loaded:
-            try:
-                if self.__model_path == None:
-                    raise ValueError(
-                        "Model path not specified. Call '.setModelPath()' and parse the path to the model file before loading the model."
-                    )
-                
-                if self.__model_type in classification_models.keys():
-                    self.__model = classification_models[self.__model_type]["model"]
-                else:
-                    raise ValueError(
-                        f"Model type '{self.__model_type}' not supported."
-                    )
-                state_dict = torch.load(self.__model_path)
-                if self.__model_type == "densenet121":
-                    # '.'s are no longer allowed in module names, but previous densenet layers
-                    # as provided by the Pytorch's model zoon has names that uses '.'s.
-                    pattern = re.compile(
-                            r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
-                                    "(?:weight|bias|running_mean|running_var))$"
-                            )
-                    for key in list(state_dict.keys()):
-                        res = pattern.match(key)
-                        if res:
-                            new_key = res.group(1) + res.group(2)
-                            state_dict[new_key] = state_dict[key]
-                            del state_dict[key]
+        if self.__model_loaded:
+            return
+        try:
+            if self.__model_path is None:
+                raise ValueError(
+                    "Model path not specified. Call '.setModelPath()' and parse the path to the model file before loading the model."
+                )
 
-                self.__model.load_state_dict(
-                        state_dict
-                    )
-                self.__model.to(self.__device)
-                self.__model_loaded = True
-                self.__model.eval()
-                self.__load_classes()
-            except Exception:
-                print(traceback.print_exc())
-                print("Weight loading failed.\nEnsure the model path is"
-                    " set and the weight file is in the specified model path.")
+            if self.__model_type in classification_models.keys():
+                self.__model = classification_models[self.__model_type]["model"]
+            else:
+                raise ValueError(
+                    f"Model type '{self.__model_type}' not supported."
+                )
+            state_dict = torch.load(self.__model_path)
+            if self.__model_type == "densenet121":
+                # '.'s are no longer allowed in module names, but previous densenet layers
+                # as provided by the Pytorch's model zoon has names that uses '.'s.
+                pattern = re.compile(
+                        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\."
+                                "(?:weight|bias|running_mean|running_var))$"
+                        )
+                for key in list(state_dict.keys()):
+                    if res := pattern.match(key):
+                        new_key = res[1] + res[2]
+                        state_dict[new_key] = state_dict[key]
+                        del state_dict[key]
+
+            self.__model.load_state_dict(
+                    state_dict
+                )
+            self.__model.to(self.__device)
+            self.__model_loaded = True
+            self.__model.eval()
+            self.__load_classes()
+        except Exception:
+            print(traceback.print_exc())
+            print("Weight loading failed.\nEnsure the model path is"
+                " set and the weight file is in the specified model path.")
                 
                 
 
@@ -213,12 +212,12 @@ class ImageClassification:
 
         images = self.__load_image(image_input)
         images = images.to(self.__device)
-    
+
         with torch.no_grad():
             output = self.__model(images)
         probabilities = torch.softmax(output, dim=1)
         topN_prob, topN_catid = torch.topk(probabilities, result_count)
-        
+
         predictions = [
                 [
                     (self.__classes[topN_catid[i][j]], topN_prob[i][j].item()*100)
@@ -226,15 +225,15 @@ class ImageClassification:
                 ]
                 for i in range(topN_prob.shape[0])
             ]
-        
+
         labels_pred = []
         probabilities_pred = []
 
-        for idx, pred in enumerate(predictions):
+        for pred in predictions:
             for label, score in pred:
                 labels_pred.append(label)
                 probabilities_pred.append(round(score, 4))
-        
+
         return labels_pred, probabilities_pred
     
 

@@ -140,15 +140,14 @@ def apply_transform(matrix, image, params):
       image:  The image to transform.
       params: The transform parameters (see TransformParameters)
     """
-    output = cv2.warpAffine(
+    return cv2.warpAffine(
         image,
         matrix[:2, :],
-        dsize       = (image.shape[1], image.shape[0]),
-        flags       = params.cvInterpolation(),
-        borderMode  = params.cvBorderMode(),
-        borderValue = params.cval,
+        dsize=(image.shape[1], image.shape[0]),
+        flags=params.cvInterpolation(),
+        borderMode=params.cvBorderMode(),
+        borderValue=params.cval,
     )
-    return output
 
 
 def compute_resize_scale(image_shape, min_side=800, max_side=1333):

@@ -8,9 +8,8 @@ def get_color(label):
     """
     if label < len(colors):
         return colors[label]
-    else:
-        print('Label {} has no color, returning default.'.format(label))
-        return (0, 255, 0)
+    print(f'Label {label} has no color, returning default.')
+    return (0, 255, 0)
 
 colors = [
     [31  , 0   , 255] ,

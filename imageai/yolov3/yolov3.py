@@ -79,10 +79,13 @@ class ConvLayer(nn.Module):
                 activation : str ="leaky"):
         super().__init__()
         self.conv = nn.Conv2d(
-                in_f, out_f, stride=stride, kernel_size=kernel_size,
-                padding= kernel_size//2,
-                bias=False if use_batch_norm else True
-            )
+            in_f,
+            out_f,
+            stride=stride,
+            kernel_size=kernel_size,
+            padding=kernel_size // 2,
+            bias=not use_batch_norm,
+        )
         self.batch_norm = nn.BatchNorm2d(out_f) if use_batch_norm else noop
         self.leaky_relu = nn.LeakyReLU(0.1, inplace=True) if activation=="leaky" else noop
 
@@ -244,9 +247,7 @@ class YoloV3(nn.Module):
         return [self.yolo1, self.yolo2, self.yolo3]
 
     def __route_layer(self, y1 : torch.Tensor, y2 : Optional[torch.Tensor]=None):
-        if isinstance(y2, torch.Tensor):
-            return torch.cat([y1, y2], 1)
-        return y1
+        return torch.cat([y1, y2], 1) if isinstance(y2, torch.Tensor) else y1
 
     def __shortcut_layer(self,
                          y1 : torch.Tensor, y2 : torch.Tensor,
