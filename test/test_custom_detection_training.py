@@ -47,9 +47,9 @@ def test_yolov3_training(transfer_learning):
     trainer.setTrainConfig(object_names_array=["number-plate"], batch_size=2, num_experiments=2, train_from_pretrained_model=transfer_learning)
     trainer.trainModel()
 
-    
+
     assert os.path.isfile(json_file)
-    assert len([file for file in os.listdir(models_dir) if file.endswith(".pt")]) > 0
+    assert [file for file in os.listdir(models_dir) if file.endswith(".pt")]
 
     delete_cache([json_dir, models_dir])
 
@@ -76,8 +76,8 @@ def test_tiny_yolov3_training(transfer_learning):
     trainer.setTrainConfig(object_names_array=["number-plate"], batch_size=2, num_experiments=2, train_from_pretrained_model=transfer_learning)
     trainer.trainModel()
 
-    
+
     assert os.path.isfile(json_file)
-    assert len([file for file in os.listdir(models_dir) if file.endswith(".pt")]) > 0
+    assert [file for file in os.listdir(models_dir) if file.endswith(".pt")]
 
     delete_cache([json_dir, models_dir])

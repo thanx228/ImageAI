@@ -63,18 +63,17 @@ class BatchGenerator(Sequence):
         dummy_yolo_1 = np.zeros((r_bound - l_bound, 1))
         dummy_yolo_2 = np.zeros_like(dummy_yolo_1)
         dummy_yolo_3 = np.zeros_like(dummy_yolo_1)
-        
-        instance_count = 0
+
         true_box_index = 0
 
         # do the logic to fill in the inputs and the output
-        for train_instance in self.instances[l_bound:r_bound]:
+        for instance_count, train_instance in enumerate(self.instances[l_bound:r_bound]):
             # augment input image and fix object's position and size
             img, all_objs = self._aug_image(train_instance, net_h, net_w)
-            
+
             for obj in all_objs:
                 # find the best anchor box for this object
-                max_anchor = None                
+                max_anchor = None
                 max_index  = -1
                 max_iou    = -1
 
@@ -82,7 +81,7 @@ class BatchGenerator(Sequence):
                                        0,
                                        obj['xmax']-obj['xmin'],                                                
                                        obj['ymax']-obj['ymin'])    
-                
+
                 for i in range(len(self.anchors)):
                     anchor = self.anchors[i]
                     iou    = bbox_iou(shifted_box, anchor)
@@ -91,17 +90,17 @@ class BatchGenerator(Sequence):
                         max_anchor = anchor
                         max_index  = i
                         max_iou    = iou                
-                
+
                 # determine the yolo to be responsible for this bounding box
                 yolo = yolos[max_index//3]
                 grid_h, grid_w = yolo.shape[1:3]
-                
+
                 # determine the position of the bounding box on the grid
                 center_x = .5*(obj['xmin'] + obj['xmax'])
                 center_x = center_x / float(net_w) * grid_w # sigma(t_x) + c_x
                 center_y = .5*(obj['ymin'] + obj['ymax'])
                 center_y = center_y / float(net_h) * grid_h # sigma(t_y) + c_y
-                
+
                 # determine the sizes of the bounding box
                 w = np.log((obj['xmax'] - obj['xmin']) / float(max_anchor.xmax)) # t_w
                 h = np.log((obj['ymax'] - obj['ymin']) / float(max_anchor.ymax)) # t_h
@@ -126,12 +125,10 @@ class BatchGenerator(Sequence):
                 t_batch[instance_count, 0, 0, 0, true_box_index] = true_box
 
                 true_box_index += 1
-                true_box_index  = true_box_index % self.max_box_per_image    
+                true_box_index %= self.max_box_per_image    
 
             # assign input image to x_batch
-            if self.norm != None: 
-                x_batch[instance_count] = self.norm(img)
-            else:
+            if self.norm is None:
                 # plot image and bounding boxes for sanity check
                 for obj in all_objs:
                     cv2.rectangle(img, (obj['xmin'],obj['ymin']), (obj['xmax'],obj['ymax']), (255,0,0), 3)
@@ -139,12 +136,11 @@ class BatchGenerator(Sequence):
                                 (obj['xmin']+2, obj['ymin']+12), 
                                 0, 1.2e-3 * img.shape[0], 
                                 (0,255,0), 2)
-                
+
                 x_batch[instance_count] = img
 
-            # increase instance counter in the current batch
-            instance_count += 1                 
-                
+            else: 
+                x_batch[instance_count] = self.norm(img)
         return [x_batch, t_batch, yolo_1, yolo_2, yolo_3], [dummy_yolo_1, dummy_yolo_2, dummy_yolo_3]
 
     def _get_net_size(self, idx):

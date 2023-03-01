@@ -79,7 +79,9 @@ class Evaluate(keras.callbacks.Callback):
             total_instances.append(num_annotations)
             precisions.append(average_precision)
         if self.weighted_average:
-            self.mean_ap = sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)
+            self.mean_ap = sum(
+                a * b for a, b in zip(total_instances, precisions)
+            ) / sum(total_instances)
         else:
             self.mean_ap = sum(precisions) / sum(x > 0 for x in total_instances)
 
@@ -90,7 +92,11 @@ class Evaluate(keras.callbacks.Callback):
                 tf.summary.scalar("mAP", self.mean_ap, step=epoch)
                 if self.verbose == 1:
                     for label, (average_precision, num_annotations) in average_precisions.items():
-                        tf.summary.scalar("AP_" + self.generator.label_to_name(label), average_precision, step=epoch)
+                        tf.summary.scalar(
+                            f"AP_{self.generator.label_to_name(label)}",
+                            average_precision,
+                            step=epoch,
+                        )
                 writer.flush()
 
         logs['mAP'] = self.mean_ap

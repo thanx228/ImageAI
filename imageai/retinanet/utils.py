@@ -19,8 +19,7 @@ def read_file(path: str) -> torch.Tensor:
     Returns:
         data (Tensor)
     """
-    data = torch.ops.image.read_file(path)
-    return data
+    return torch.ops.image.read_file(path)
 
 def decode_image(input: torch.Tensor, mode: ImageReadMode = ImageReadMode.UNCHANGED) -> torch.Tensor:
     """
@@ -41,8 +40,7 @@ def decode_image(input: torch.Tensor, mode: ImageReadMode = ImageReadMode.UNCHAN
     Returns:
         output (Tensor[image_channels, image_height, image_width])
     """
-    output = torch.ops.image.decode_image(input, mode.value)
-    return output
+    return torch.ops.image.decode_image(input, mode.value)
 
 def read_image(path: str, mode: ImageReadMode = ImageReadMode.UNCHANGED) -> torch.Tensor:
         """
@@ -107,7 +105,7 @@ def make_grid(
     if not (torch.is_tensor(tensor) or (isinstance(tensor, list) and all(torch.is_tensor(t) for t in tensor))):
         raise TypeError(f"tensor or list of tensors expected, got {type(tensor)}")
 
-    if "range" in kwargs.keys():
+    if "range" in kwargs:
         warnings.warn(
             "The parameter 'range' is deprecated since 0.12 and will be removed in 0.14. "
             "Please use 'value_range' instead."
@@ -128,7 +126,7 @@ def make_grid(
     if tensor.dim() == 4 and tensor.size(1) == 1:  # single-channel images
         tensor = torch.cat((tensor, tensor, tensor), 1)
 
-    if normalize is True:
+    if normalize:
         tensor = tensor.clone()  # avoid modifying tensor in-place
         if value_range is not None:
             assert isinstance(
@@ -145,7 +143,7 @@ def make_grid(
             else:
                 norm_ip(t, float(t.min()), float(t.max()))
 
-        if scale_each is True:
+        if scale_each:
             for t in tensor:  # loop over mini-batch dimension
                 norm_range(t, value_range)
         else:
@@ -283,7 +281,11 @@ def tensor_to_ndarray(
     """
 
     grid = make_grid(tensor, **kwargs)
-    # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
-    ndarr = grid.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
-    
-    return ndarr
+    return (
+        grid.mul(255)
+        .add_(0.5)
+        .clamp_(0, 255)
+        .permute(1, 2, 0)
+        .to("cpu", torch.uint8)
+        .numpy()
+    )

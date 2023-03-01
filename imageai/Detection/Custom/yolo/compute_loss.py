@@ -29,27 +29,25 @@ def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=
     union = w1 * h1 + w2 * h2 - inter + eps
 
     iou = inter / union
-    if GIoU or DIoU or CIoU:
-        # convex (smallest enclosing box) width
-        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)
-        ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
-        if CIoU or DIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
-            c2 = cw ** 2 + ch ** 2 + eps  # convex diagonal squared
-            rho2 = ((b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2 +
-                    (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2) / 4  # center distance squared
-            if DIoU:
-                return iou - rho2 / c2  # DIoU
-            elif CIoU:  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
-                v = (4 / math.pi ** 2) * \
-                    torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
-                with torch.no_grad():
-                    alpha = v / ((1 + eps) - iou + v)
-                return iou - (rho2 / c2 + v * alpha)  # CIoU
-        else:  # GIoU https://arxiv.org/pdf/1902.09630.pdf
-            c_area = cw * ch + eps  # convex area
-            return iou - (c_area - union) / c_area  # GIoU
-    else:
+    if not GIoU and not DIoU and not CIoU:
         return iou  # IoU
+    # convex (smallest enclosing box) width
+    cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)
+    ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
+    if CIoU or DIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
+        c2 = cw ** 2 + ch ** 2 + eps  # convex diagonal squared
+        rho2 = ((b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2 +
+                (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2) / 4  # center distance squared
+        if DIoU:
+            return iou - rho2 / c2  # DIoU
+        v = (4 / math.pi ** 2) * \
+            torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
+        with torch.no_grad():
+            alpha = v / ((1 + eps) - iou + v)
+        return iou - (rho2 / c2 + v * alpha)  # CIoU
+    else:  # GIoU https://arxiv.org/pdf/1902.09630.pdf
+        c_area = cw * ch + eps  # convex area
+        return iou - (c_area - union) / c_area  # GIoU
 
 
 def compute_loss(loss_layers, targets, device="cpu"):
@@ -77,12 +75,7 @@ def compute_loss(loss_layers, targets, device="cpu"):
         b, anchor, grid_j, grid_i = indices[layer_index]
         # Build empty object target tensor with the same shape as the object prediction
         tobj = torch.zeros_like(layer_predictions[..., 0], device=device)  # target obj
-        # Get the number of targets for this layer.
-        # Each target is a label box with some scaling and the association of an anchor box.
-        # Label boxes may be associated to 0 or multiple anchors. So they are multiple times or not at all in the targets.
-        num_targets = b.shape[0]
-        # Check if there are targets for this batch
-        if num_targets:
+        if num_targets := b.shape[0]:
             # Load the corresponding values from the predictions for each of the targets
             ps = layer_predictions[b, anchor, grid_j, grid_i]
 

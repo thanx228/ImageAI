@@ -18,11 +18,8 @@ def forFrame(frame_number, output_array, output_count, returned_frame):
     labels = []
     sizes = []
 
-    counter = 0
-
     for eachItem in output_count:
-        counter += 1
-        labels.append(eachItem + " = " + str(output_count[eachItem]))
+        labels.append(f"{eachItem} = {str(output_count[eachItem])}")
         sizes.append(output_count[eachItem])
         this_colors.append(color_index[eachItem])
 
@@ -34,12 +31,12 @@ def forFrame(frame_number, output_array, output_count, returned_frame):
         resized = True
 
     plt.subplot(1, 2, 1)
-    plt.title("Frame : " + str(frame_number))
+    plt.title(f"Frame : {str(frame_number)}")
     plt.axis("off")
     plt.imshow(returned_frame, interpolation="none")
 
     plt.subplot(1, 2, 2)
-    plt.title("Analysis: " + str(frame_number))
+    plt.title(f"Analysis: {str(frame_number)}")
     plt.pie(sizes, labels=labels, colors=this_colors, shadow=True, startangle=140, autopct="%1.1f%%")
 
     plt.pause(0.01)

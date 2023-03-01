@@ -134,66 +134,72 @@ class ObjectDetection:
                 :return:
         """
 
-        if (self.__modelType == "retinanet"):
-            if (detection_speed == "normal"):
-                self.__input_image_min = 800
-                self.__input_image_max = 1333
-            elif (detection_speed == "fast"):
+        if self.__modelType == "retinanet":
+            if detection_speed == "fast":
                 self.__input_image_min = 400
                 self.__input_image_max = 700
-            elif (detection_speed == "faster"):
+            elif detection_speed == "faster":
                 self.__input_image_min = 300
                 self.__input_image_max = 500
-            elif (detection_speed == "fastest"):
+            elif detection_speed == "fastest":
                 self.__input_image_min = 200
                 self.__input_image_max = 350
-            elif (detection_speed == "flash"):
+            elif detection_speed == "flash":
                 self.__input_image_min = 100
                 self.__input_image_max = 250
-        elif (self.__modelType == "yolov3"):
-            if (detection_speed == "normal"):
-                self.__yolo_model_image_size = (416, 416)
-            elif (detection_speed == "fast"):
-                self.__yolo_model_image_size = (320, 320)
-            elif (detection_speed == "faster"):
-                self.__yolo_model_image_size = (208, 208)
-            elif (detection_speed == "fastest"):
-                self.__yolo_model_image_size = (128, 128)
-            elif (detection_speed == "flash"):
-                self.__yolo_model_image_size = (96, 96)
-
-        elif (self.__modelType == "tinyyolov3"):
-            if (detection_speed == "normal"):
-                self.__yolo_model_image_size = (832, 832)
-            elif (detection_speed == "fast"):
+            elif detection_speed == "normal":
+                self.__input_image_min = 800
+                self.__input_image_max = 1333
+        elif self.__modelType == "tinyyolov3":
+            if detection_speed == "fast":
                 self.__yolo_model_image_size = (576, 576)
-            elif (detection_speed == "faster"):
+            elif detection_speed == "faster":
                 self.__yolo_model_image_size = (416, 416)
-            elif (detection_speed == "fastest"):
+            elif detection_speed == "fastest":
                 self.__yolo_model_image_size = (320, 320)
-            elif (detection_speed == "flash"):
+            elif detection_speed == "flash":
                 self.__yolo_model_image_size = (272, 272)
 
-        if (self.__modelLoaded == False):
-            if (self.__modelType == ""):
+            elif detection_speed == "normal":
+                self.__yolo_model_image_size = (832, 832)
+        elif self.__modelType == "yolov3":
+            if detection_speed == "fast":
+                self.__yolo_model_image_size = (320, 320)
+            elif detection_speed == "faster":
+                self.__yolo_model_image_size = (208, 208)
+            elif detection_speed == "fastest":
+                self.__yolo_model_image_size = (128, 128)
+            elif detection_speed == "flash":
+                self.__yolo_model_image_size = (96, 96)
+
+            elif detection_speed == "normal":
+                self.__yolo_model_image_size = (416, 416)
+        if (self.__modelType == ""):
+            if (self.__modelLoaded == False):
                 raise ValueError("You must set a valid model type before loading the model.")
-            elif (self.__modelType == "retinanet"):
+        elif (self.__modelType == "retinanet"):
+            if (self.__modelLoaded == False):
                 model = retinanet_models.load_model(self.modelPath, backbone_name='resnet50')
                 self.__model_collection.append(model)
                 self.__modelLoaded = True
-            elif (self.__modelType == "yolov3" or self.__modelType == "tinyyolov3"):
+        elif self.__modelType in ["yolov3", "tinyyolov3"]:
+            if (self.__modelLoaded == False):
 
                 input_image = Input(shape=(None, None, 3))
 
-                if self.__modelType == "yolov3":
-                    model = yolov3_main(input_image, len(self.__yolo_anchors),
-                                    len(self.numbers_to_names.keys()))
-                else:
-                    model = tiny_yolov3_main(input_image, 3,
-                                 len(self.numbers_to_names.keys()))
-
+                model = (
+                    yolov3_main(
+                        input_image,
+                        len(self.__yolo_anchors),
+                        len(self.numbers_to_names.keys()),
+                    )
+                    if self.__modelType == "yolov3"
+                    else tiny_yolov3_main(
+                        input_image, 3, len(self.numbers_to_names.keys())
+                    )
+                )
                 model.load_weights(self.modelPath)
-               
+
                 self.__model_collection.append(model)
                 self.__modelLoaded = True
 

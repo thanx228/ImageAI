@@ -65,9 +65,7 @@ class YoloV3Tiny(nn.Module):
         return [self.yolo1, self.yolo2]
 
     def __route_layer(self, y1 : torch.Tensor, y2 : Optional[torch.Tensor]=None) -> torch.Tensor:
-        if isinstance(y2, torch.Tensor):
-            return torch.cat([y1, y2], 1)
-        return y1
+        return torch.cat([y1, y2], 1) if isinstance(y2, torch.Tensor) else y1
 
     def forward(self, x : torch.Tensor) -> torch.Tensor:
         y = self.maxpool2(self.conv2(self.maxpool1(self.conv1(x))))

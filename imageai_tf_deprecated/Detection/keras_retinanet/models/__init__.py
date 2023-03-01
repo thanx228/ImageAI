@@ -62,7 +62,9 @@ def backbone(backbone_name):
     elif 'EfficientNet' in backbone_name:
         from .effnet import EfficientNetBackbone as b
     else:
-        raise NotImplementedError('Backbone class for  \'{}\' not implemented.'.format(backbone))
+        raise NotImplementedError(
+            f"Backbone class for  \'{backbone}\' not implemented."
+        )
 
     return b(backbone_name)
 
@@ -111,8 +113,10 @@ def convert_model(model, nms=True, class_specific_filter=True, anchor_params=Non
 def assert_training_model(model):
     """ Assert that the model is a training model.
     """
-    assert(all(output in model.output_names for output in ['regression', 'classification'])), \
-        "Input is not a training model (no 'regression' and 'classification' outputs were found, outputs are: {}).".format(model.output_names)
+    assert all(
+        output in model.output_names
+        for output in ['regression', 'classification']
+    ), f"Input is not a training model (no 'regression' and 'classification' outputs were found, outputs are: {model.output_names})."
 
 
 def check_training_model(model):

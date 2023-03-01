@@ -77,12 +77,18 @@ def evaluate_coco(generator, model, threshold=0.05):
         return
 
     # write output
-    json.dump(results, open('{}_bbox_results.json'.format(generator.set_name), 'w'), indent=4)
-    json.dump(image_ids, open('{}_processed_image_ids.json'.format(generator.set_name), 'w'), indent=4)
+    json.dump(
+        results, open(f'{generator.set_name}_bbox_results.json', 'w'), indent=4
+    )
+    json.dump(
+        image_ids,
+        open(f'{generator.set_name}_processed_image_ids.json', 'w'),
+        indent=4,
+    )
 
     # load results in COCO evaluation tool
     coco_true = generator.coco
-    coco_pred = coco_true.loadRes('{}_bbox_results.json'.format(generator.set_name))
+    coco_pred = coco_true.loadRes(f'{generator.set_name}_bbox_results.json')
 
     # run COCO evaluation
     coco_eval = COCOeval(coco_true, coco_pred, 'bbox')

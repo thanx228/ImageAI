@@ -78,35 +78,31 @@ class ObjectDetection:
         return unique_classes
 
     def __load_image_yolo(self, input_image : Union[str, np.ndarray, Image.Image]) -> Tuple[List[str], List[np.ndarray], torch.Tensor, torch.Tensor]:
-        allowed_exts = ["jpg", "jpeg", "png"]
         fnames = []
-        original_dims = []
-        inputs = []
-        original_imgs = []
         if type(input_image) == str:
-            if os.path.isfile(input_image):
-                if input_image.rsplit('.')[-1].lower() in allowed_exts:
-                    img = cv2.imread(input_image)
-            else:
+            if not os.path.isfile(input_image):
                 raise ValueError(f"image path '{input_image}' is not found or a valid file")
+            allowed_exts = ["jpg", "jpeg", "png"]
+            if input_image.rsplit('.')[-1].lower() in allowed_exts:
+                img = cv2.imread(input_image)
         elif type(input_image) == np.ndarray:
             img = input_image
         elif "PIL" in str(type(input_image)):
             img = np.asarray(input_image)
         else:
-            raise ValueError(f"Invalid image input format")
-        
+            raise ValueError("Invalid image input format")
+
         img_h, img_w, _ = img.shape
 
-        original_imgs.append(np.array(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)).astype(np.uint8))
-        original_dims.append((img_w, img_h))
+        original_imgs = [
+            np.array(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)).astype(np.uint8)
+        ]
         if type(input_image) == str:
             fnames.append(os.path.basename(input_image)) 
         else:
-            fnames.append("") 
-        inputs.append(prepare_image(img, (416, 416)))
-
-        if original_dims:
+            fnames.append("")
+        inputs = [prepare_image(img, (416, 416))]
+        if original_dims := [(img_w, img_h)]:
             return (
                     fnames,
                     original_imgs,
@@ -124,14 +120,14 @@ class ObjectDetection:
         temp_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             f"{str(uuid.uuid4())}.jpg" 
-        ) 
+        )
         if type(input_image) == np.ndarray:
             cv2.imwrite(temp_path, input_image)
         elif "PIL" in str(type(input_image)):
             input_image.save(temp_path)
         else:
             raise ValueError(
-                f"Invalid image input. Supported formats are OpenCV/Numpy array, PIL image or image file path"
+                "Invalid image input. Supported formats are OpenCV/Numpy array, PIL image or image file path"
             )
 
         return temp_path
@@ -140,29 +136,28 @@ class ObjectDetection:
         """
         Loads image from the given path.
         """
-        allowed_file_extensions = ["jpg", "jpeg", "png"]
         images = []
         scaled_images = []
         fnames = []
-        
+
         delete_file = False
         if type(input_image) is not str:
             input_image = self.__save_temp_img(input_image=input_image)
             delete_file = True
 
 
-        if os.path.isfile(input_image):
-            if input_image.rsplit('.')[-1].lower() in allowed_file_extensions:
-                img = read_image(input_image, ImageReadMode.RGB)
-                images.append(img)
-                scaled_images.append(img.div(255.0).to(self.__device))
-                fnames.append(os.path.basename(input_image))
-        else:
+        if not os.path.isfile(input_image):
             raise ValueError(f"Input image with path {input_image} not a valid file")
 
+        allowed_file_extensions = ["jpg", "jpeg", "png"]
+        if input_image.rsplit('.')[-1].lower() in allowed_file_extensions:
+            img = read_image(input_image, ImageReadMode.RGB)
+            images.append(img)
+            scaled_images.append(img.div(255.0).to(self.__device))
+            fnames.append(os.path.basename(input_image))
         if delete_file:
             os.remove(input_image)
-        
+
         if images:
             return (fnames, images, scaled_images)
         raise RuntimeError(
@@ -228,37 +223,40 @@ class ObjectDetection:
         in the setModelPath() function.
         :return:
         """
-        if not self.__model_loaded:
-            if self.__model_type=="yolov3":
-                self.__model = YoloV3(
-                        anchors=self.__anchors ,
-                        num_classes=len(self.__classes),\
+        if self.__model_loaded:
+            return
+        if self.__model_type=="yolov3":
+            self.__model = YoloV3(
+                    anchors=self.__anchors ,
+                    num_classes=len(self.__classes),\
                         device=self.__device
+                )
+        elif self.__model_type=="tiny-yolov3":
+            self.__model = YoloV3Tiny(
+                anchors=self.__anchors,
+                num_classes=len(self.__classes),
+                device=self.__device
+                )
+        elif self.__model_type=="retinanet":
+
+            self.__classes = self.__load_classes(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"))
+
+            self.__model = torchvision.models.detection.retinanet_resnet50_fpn(
+                        pretrained=False, num_classes=91,
+                        pretrained_backbone = False
                     )
-            elif self.__model_type=="tiny-yolov3":
-                self.__model = YoloV3Tiny(
-                    anchors=self.__anchors,
-                    num_classes=len(self.__classes),
-                    device=self.__device
-                    )
-            elif self.__model_type=="retinanet":
+        else:
+            raise ValueError(
+                "Invalid model type. Call setModelTypeAsYOLOv3(), setModelTypeAsTinyYOLOv3() or setModelTypeAsRetinaNet to set a model type before loading the model"
+            )
 
-                self.__classes = self.__load_classes(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"))
-
-                self.__model = torchvision.models.detection.retinanet_resnet50_fpn(
-                            pretrained=False, num_classes=91,
-                            pretrained_backbone = False
-                        )
-            else:
-                raise ValueError(f"Invalid model type. Call setModelTypeAsYOLOv3(), setModelTypeAsTinyYOLOv3() or setModelTypeAsRetinaNet to set a model type before loading the model")
-
-            state_dict = torch.load(self.__model_path, map_location=self.__device)
-            try:
-                self.__model.load_state_dict(state_dict)
-                self.__model_loaded = True
-                self.__model.to(self.__device).eval()
-            except:
-                raise RuntimeError("Invalid weights!!!") from None
+        state_dict = torch.load(self.__model_path, map_location=self.__device)
+        try:
+            self.__model.load_state_dict(state_dict)
+            self.__model_loaded = True
+            self.__model.to(self.__device).eval()
+        except:
+            raise RuntimeError("Invalid weights!!!") from None
     
     def CustomObjects(self, **kwargs):
 
@@ -277,10 +275,7 @@ class ObjectDetection:
         if not self.__model_loaded:
             self.loadModel()
         all_objects_str = (obj_label.replace(" ", "_") for obj_label in self.__classes)
-        all_objects_dict = {}
-        for object_str in all_objects_str:
-            all_objects_dict[object_str] = False
-        
+        all_objects_dict = {object_str: False for object_str in all_objects_str}
         for karg in kwargs:
             if karg in all_objects_dict:
                 all_objects_dict[karg] = kwargs[karg]

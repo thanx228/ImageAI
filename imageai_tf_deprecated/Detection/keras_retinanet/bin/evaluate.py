@@ -73,7 +73,7 @@ def create_generator(args, preprocess_image):
             **common_args
         )
     else:
-        raise ValueError('Invalid data type received: {}'.format(args.dataset_type))
+        raise ValueError(f'Invalid data type received: {args.dataset_type}')
 
     return validation_generator
 
@@ -187,7 +187,12 @@ def main(args=None):
 
         print('Inference time for {:.0f} images: {:.4f}'.format(generator.size(), inference_time))
 
-        print('mAP using the weighted average of precisions among classes: {:.4f}'.format(sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)))
+        print(
+            'mAP using the weighted average of precisions among classes: {:.4f}'.format(
+                sum(a * b for a, b in zip(total_instances, precisions))
+                / sum(total_instances)
+            )
+        )
         print('mAP: {:.4f}'.format(sum(precisions) / sum(x > 0 for x in total_instances)))
 
 

@@ -10,19 +10,11 @@ def _rand_scale(scale):
 
 def _constrain(min_v, max_v, value):
 
-    if value < min_v:
-        return min_v
-
-    if value > max_v:
-        return max_v
-
-    return value 
+    return min_v if value < min_v else min(value, max_v) 
 
 
 def random_flip(image, flip):
-    if flip == 1:
-        return cv2.flip(image, 1)
-    return image
+    return cv2.flip(image, 1) if flip == 1 else image
 
 
 def correct_bounding_boxes(boxes, new_w, new_h, net_w, net_h, dx, dy, flip, image_w, image_h):

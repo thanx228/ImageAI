@@ -57,12 +57,12 @@ def _findNode(parent, name, debug_name=None, parse=None):
 
     result = parent.find(name)
     if result is None:
-        raise ValueError('missing element \'{}\''.format(debug_name))
+        raise ValueError(f"missing element \'{debug_name}\'")
     if parse is not None:
         try:
             return parse(result.text)
         except ValueError as e:
-            raise_from(ValueError('illegal value for \'{}\': {}'.format(debug_name, e)), None)
+            raise_from(ValueError(f"illegal value for \'{debug_name}\': {e}"), None)
     return result
 
 
@@ -91,7 +91,12 @@ class PascalVocGenerator(Generator):
         self.data_dir             = data_dir
         self.set_name             = set_name
         self.classes              = classes
-        self.image_names          = [line.strip().split(None, 1)[0] for line in open(os.path.join(data_dir, 'ImageSets', 'Main', set_name + '.txt')).readlines()]
+        self.image_names = [
+            line.strip().split(None, 1)[0]
+            for line in open(
+                os.path.join(data_dir, 'ImageSets', 'Main', f'{set_name}.txt')
+            ).readlines()
+        ]
         self.image_extension      = image_extension
         self.skip_truncated       = skip_truncated
         self.skip_difficult       = skip_difficult
@@ -157,7 +162,9 @@ class PascalVocGenerator(Generator):
 
         class_name = _findNode(element, 'name').text
         if class_name not in self.classes:
-            raise ValueError('class name \'{}\' not found in classes: {}'.format(class_name, list(self.classes.keys())))
+            raise ValueError(
+                f"class name \'{class_name}\' not found in classes: {list(self.classes.keys())}"
+            )
 
         box = np.zeros((4,))
         label = self.name_to_label(class_name)
@@ -178,7 +185,7 @@ class PascalVocGenerator(Generator):
             try:
                 truncated, difficult, box, label = self.__parse_annotation(element)
             except ValueError as e:
-                raise_from(ValueError('could not parse object #{}: {}'.format(i, e)), None)
+                raise_from(ValueError(f'could not parse object #{i}: {e}'), None)
 
             if truncated and self.skip_truncated:
                 continue
@@ -193,11 +200,11 @@ class PascalVocGenerator(Generator):
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
-        filename = self.image_names[image_index] + '.xml'
+        filename = f'{self.image_names[image_index]}.xml'
         try:
             tree = ET.parse(os.path.join(self.data_dir, 'Annotations', filename))
             return self.__parse_annotations(tree.getroot())
         except ET.ParseError as e:
-            raise_from(ValueError('invalid annotations file: {}: {}'.format(filename, e)), None)
+            raise_from(ValueError(f'invalid annotations file: {filename}: {e}'), None)
         except ValueError as e:
-            raise_from(ValueError('invalid annotations file: {}: {}'.format(filename, e)), None)
+            raise_from(ValueError(f'invalid annotations file: {filename}: {e}'), None)

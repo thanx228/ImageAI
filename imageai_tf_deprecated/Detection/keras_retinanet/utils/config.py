@@ -32,8 +32,9 @@ def read_config_file(config_path):
     config_keys = set(config['anchor_parameters'])
     default_keys = set(AnchorParameters.default.__dict__.keys())
 
-    assert config_keys <= default_keys, \
-        "Malformed config file. These keys are not valid: {}".format(config_keys - default_keys)
+    assert (
+        config_keys <= default_keys
+    ), f"Malformed config file. These keys are not valid: {config_keys - default_keys}"
 
     if 'pyramid_levels' in config:
         assert('levels' in config['pyramid_levels']), "pyramid levels specified by levels key"
@@ -52,6 +53,4 @@ def parse_anchor_parameters(config):
 
 
 def parse_pyramid_levels(config):
-    levels = list(map(int, config['pyramid_levels']['levels'].split(' ')))
-
-    return levels
+    return list(map(int, config['pyramid_levels']['levels'].split(' ')))

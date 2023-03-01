@@ -205,7 +205,7 @@ def residual_block(input, channels, num_blocks):
     network = ZeroPadding2D(((1,0), (1,0)))(input)
     network = NetworkConv2D_BN_Leaky(input=network,channels=channels, kernel_size=(3,3), strides=(2,2), padding="valid")
 
-    for blocks in range(num_blocks):
+    for _ in range(num_blocks):
         network_1 = NetworkConv2D_BN_Leaky(input=network, channels= channels // 2, kernel_size=(1,1))
         network_1 = NetworkConv2D_BN_Leaky(input=network_1,channels= channels, kernel_size=(3,3))
 

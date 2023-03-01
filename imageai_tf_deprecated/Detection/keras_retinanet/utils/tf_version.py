@@ -42,7 +42,9 @@ def assert_tf_version(minimum_tf_version=MINIMUM_TF_VERSION, blacklisted=BLACKLI
     """
     detected = tf.version.VERSION
     required = '.'.join(map(str, minimum_tf_version))
-    assert(tf_version_ok(minimum_tf_version, blacklisted)), 'You are using tensorflow version {}. The minimum required version is {} (blacklisted: {}).'.format(detected, required, blacklisted)
+    assert tf_version_ok(
+        minimum_tf_version, blacklisted
+    ), f'You are using tensorflow version {detected}. The minimum required version is {required} (blacklisted: {blacklisted}).'
 
 
 def check_tf_version():

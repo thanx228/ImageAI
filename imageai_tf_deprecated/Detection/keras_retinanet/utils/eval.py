@@ -51,9 +51,7 @@ def _compute_ap(recall, precision):
     # where X axis (recall) changes value
     i = np.where(mrec[1:] != mrec[:-1])[0]
 
-    # and sum (\Delta recall) * prec
-    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    return ap
+    return np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
 
 
 def _get_detections(generator, model, score_threshold=0.05, max_detections=100, save_path=None):
@@ -71,8 +69,15 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
     # Returns
         A list of lists containing the detections for each image in the generator.
     """
-    all_detections = [[None for i in range(generator.num_classes()) if generator.has_label(i)] for j in range(generator.size())]
-    all_inferences = [None for i in range(generator.size())]
+    all_detections = [
+        [
+            None
+            for i in range(generator.num_classes())
+            if generator.has_label(i)
+        ]
+        for _ in range(generator.size())
+    ]
+    all_inferences = [None for _ in range(generator.size())]
 
     for i in progressbar.progressbar(range(generator.size()), prefix='Running network: '):
         raw_image    = generator.load_image(i)
@@ -109,7 +114,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
             draw_annotations(raw_image, generator.load_annotations(i), label_to_name=generator.label_to_name)
             draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name=generator.label_to_name, score_threshold=score_threshold)
 
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
+            cv2.imwrite(os.path.join(save_path, f'{i}.png'), raw_image)
 
         # copy detections to all_detections
         for label in range(generator.num_classes()):
@@ -134,7 +139,10 @@ def _get_annotations(generator):
     # Returns
         A list of lists containing the annotations for each image in the generator.
     """
-    all_annotations = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
+    all_annotations = [
+        [None for _ in range(generator.num_classes())]
+        for _ in range(generator.size())
+    ]
 
     for i in progressbar.progressbar(range(generator.size()), prefix='Parsing annotations: '):
         # load the annotations

@@ -40,11 +40,17 @@ class EfficientNetBackbone(Backbone):
         from efficientnet.weights import IMAGENET_WEIGHTS_PATH
         from efficientnet.weights import IMAGENET_WEIGHTS_HASHES
 
-        model_name = 'efficientnet-b' + self.backbone[-1]
-        file_name = model_name + '_weights_tf_dim_ordering_tf_kernels_autoaugment_notop.h5'
+        model_name = f'efficientnet-b{self.backbone[-1]}'
+        file_name = (
+            f'{model_name}_weights_tf_dim_ordering_tf_kernels_autoaugment_notop.h5'
+        )
         file_hash = IMAGENET_WEIGHTS_HASHES[model_name][1]
-        weights_path = keras.utils.get_file(file_name, IMAGENET_WEIGHTS_PATH + file_name, cache_subdir='models', file_hash=file_hash)
-        return weights_path
+        return keras.utils.get_file(
+            file_name,
+            IMAGENET_WEIGHTS_PATH + file_name,
+            cache_subdir='models',
+            file_hash=file_hash,
+        )
 
     def validate(self):
         """ Checks whether the backbone string is correct.
@@ -54,7 +60,9 @@ class EfficientNetBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, allowed_backbones))
+            raise ValueError(
+                f"Backbone (\'{backbone}\') not in allowed backbones ({allowed_backbones})."
+            )
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.
@@ -100,7 +108,7 @@ def effnet_retinanet(num_classes, backbone='EfficientNetB0', inputs=None, modifi
     elif backbone == 'EfficientNetB7':
         model = efn.EfficientNetB7(input_tensor=inputs, include_top=False, weights=None)
     else:
-        raise ValueError('Backbone (\'{}\') is invalid.'.format(backbone))
+        raise ValueError(f"Backbone (\'{backbone}\') is invalid.")
 
     layer_outputs = ['block4a_expand_activation', 'block6a_expand_activation', 'top_activation']
 

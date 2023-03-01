@@ -14,11 +14,8 @@ for eachObject in detections:
     print(eachObject["name"], " : ", eachObject["percentage_probability"], " : ", eachObject["box_points"])
 
 cv2.imshow("Main Image", detected_image)
-count = 0
-for img in extracted_objects:
-    count += 1
-
-    cv2.imshow("Window" + str(count), img)
+for count, img in enumerate(extracted_objects, start=1):
+    cv2.imshow(f"Window{str(count)}", img)
 
 cv2.waitKey()
 cv2.destroyAllWindows()

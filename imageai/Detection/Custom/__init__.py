@@ -293,12 +293,12 @@ class DetectionModelTrainer:
                                                 self.__model, self.__val_loader,
                                                 self.__num_classes, device=self.__device
                                             )
-                    
+
                     print(f"    recall: {mr:0.6f} precision: {mp:0.6f} mAP@0.5: {map50:0.6f}, mAP@0.5-0.95: {map50_95:0.6f}" "\n")
 
                     if map50 > best_fitness:
                         best_fitness = map50
-                        recent_save_name = self.__model_type+f"_{self.__dataset_name}_mAP-{best_fitness:0.5f}_epoch-{epoch}.pt"
+                        recent_save_name = f"{self.__model_type}_{self.__dataset_name}_mAP-{best_fitness:0.5f}_epoch-{epoch}.pt"
                         if prev_save_name:
                             os.remove(os.path.join(self.__output_models_dir, prev_save_name))
                         torch.save(
@@ -309,9 +309,12 @@ class DetectionModelTrainer:
 
             if epoch == self.__epochs:
                 torch.save(
-                        self.__model.state_dict(),
-                        os.path.join(self.__output_models_dir, self.__model_type+f"_{self.__dataset_name}_last.pt")
-                    )
+                    self.__model.state_dict(),
+                    os.path.join(
+                        self.__output_models_dir,
+                        f"{self.__model_type}_{self.__dataset_name}_last.pt",
+                    ),
+                )
 
         elapsed_time = time.time() - since
         print(f"Training completed in {elapsed_time//60:.0f}m {elapsed_time % 60:.0f}s")
@@ -351,14 +354,13 @@ class CustomObjectDetection:
         self.__model_type = "tiny-yolov3"
     
     def setModelPath(self, model_path: str):
-        if os.path.isfile(model_path):
-            extension_check(model_path)
-            self.__model_path = model_path
-            self.__model_loaded = False
-        else:
+        if not os.path.isfile(model_path):
             raise ValueError(
                         "invalid path, path not pointing to the weightfile."
                     ) from None
+        extension_check(model_path)
+        self.__model_path = model_path
+        self.__model_loaded = False
         self.__model_path = model_path
     
     def setJsonPath(self, configuration_json: str):
@@ -377,35 +379,31 @@ class CustomObjectDetection:
         this function only load the images in the directory (it does noot visit the
         subdirectories).
         """
-        allowed_exts = ["jpg", "jpeg", "png"]
         fnames = []
-        original_dims = []
-        inputs = []
-        original_imgs = []
         if type(input_image) == str:
-            if os.path.isfile(input_image):
-                if input_image.rsplit('.')[-1].lower() in allowed_exts:
-                    img = cv2.imread(input_image)
-            else:
+            if not os.path.isfile(input_image):
                 raise ValueError(f"image path '{input_image}' is not found or a valid file")
+            allowed_exts = ["jpg", "jpeg", "png"]
+            if input_image.rsplit('.')[-1].lower() in allowed_exts:
+                img = cv2.imread(input_image)
         elif type(input_image) == np.ndarray:
             img = input_image
         elif "PIL" in str(type(input_image)):
             img = np.asarray(input_image)
         else:
-            raise ValueError(f"Invalid image input format")
-        
+            raise ValueError("Invalid image input format")
+
         img_h, img_w, _ = img.shape
 
-        original_imgs.append(np.array(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)).astype(np.uint8))
-        original_dims.append((img_w, img_h))
+        original_imgs = [
+            np.array(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)).astype(np.uint8)
+        ]
         if type(input_image) == str:
             fnames.append(os.path.basename(input_image)) 
         else:
-            fnames.append("") 
-        inputs.append(prepare_image(img, (416, 416)))
-
-        if original_dims:
+            fnames.append("")
+        inputs = [prepare_image(img, (416, 416))]
+        if original_dims := [(img_w, img_h)]:
             return (
                     fnames,
                     original_imgs,
@@ -448,8 +446,10 @@ class CustomObjectDetection:
                 device=self.__device
             )
         else:
-            raise ValueError(f"Invalid model type. Call setModelTypeAsYOLOv3() or setModelTypeAsTinyYOLOv3() to set a model type before loading the model")
-                            
+            raise ValueError(
+                "Invalid model type. Call setModelTypeAsYOLOv3() or setModelTypeAsTinyYOLOv3() to set a model type before loading the model"
+            )
+
         self.__model.to(self.__device)
 
         state_dict = torch.load(self.__model_path, map_location=self.__device)

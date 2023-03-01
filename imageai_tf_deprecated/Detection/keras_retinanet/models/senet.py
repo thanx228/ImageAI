@@ -45,7 +45,9 @@ class SeBackbone(Backbone):
                 weights_path = keras.utils.get_file(el['name'], el['url'], cache_subdir='models', file_hash=el['md5'])
 
         if weights_path is None:
-            raise ValueError('Unable to find imagenet weights for backbone {}!'.format(self.backbone))
+            raise ValueError(
+                f'Unable to find imagenet weights for backbone {self.backbone}!'
+            )
 
         return weights_path
 
@@ -57,7 +59,9 @@ class SeBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, allowed_backbones))
+            raise ValueError(
+                f"Backbone (\'{backbone}\') not in allowed backbones ({allowed_backbones})."
+            )
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.
@@ -89,7 +93,7 @@ def senet_retinanet(num_classes, backbone='seresnext50', inputs=None, modifier=N
     model = classifier(input_tensor=inputs, include_top=False, weights=None)
 
     # get last conv layer from the end of each block [28x28, 14x14, 7x7]
-    if backbone == 'seresnet18' or backbone == 'seresnet34':
+    if backbone in ['seresnet18', 'seresnet34']:
         layer_outputs = ['stage3_unit1_relu1', 'stage4_unit1_relu1', 'relu1']
     elif backbone == 'seresnet50':
         layer_outputs = ['activation_36', 'activation_66', 'activation_81']
@@ -104,7 +108,7 @@ def senet_retinanet(num_classes, backbone='seresnext50', inputs=None, modifier=N
     elif backbone == 'senet154':
         layer_outputs = ['activation_59', 'activation_239', 'activation_253']
     else:
-        raise ValueError('Backbone (\'{}\') is invalid.'.format(backbone))
+        raise ValueError(f"Backbone (\'{backbone}\') is invalid.")
 
     layer_outputs = [
         model.get_layer(name=layer_outputs[0]).output,  # 28x28
